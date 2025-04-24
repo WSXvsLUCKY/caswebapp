@@ -15,15 +15,14 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Конфигурация PostgreSQL
+# Конфигурация PostgreSQL для Render.com
 POSTGRES_CONFIG = {
-    'host': 'localhost',
+    'host': 'dpg-d058p7je5dus73cm4bqg-a.oregon-postgres.render.com',
     'port': 5432,
-    'database': 'PR',
-    'user': 'project',
-    'password': 'rtrtrtrt'
+    'database': 'pr_5zka',
+    'user': 'user_admin',
+    'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
 }
-
 # Глобальные переменные для хранения активных игр
 mines_games = {}
 
