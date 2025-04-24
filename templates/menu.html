@@ -485,15 +485,26 @@
         }
 
         // Навигация по играм
-        function launchGame(game) {
-            const params = new URLSearchParams();
-            params.append('user_id', CURRENT_USER.id);
-            params.append('first_name', CURRENT_USER.first_name);
-            if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
-            if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
-            
-            window.location.href = `/${game}?${params.toString()}`;
-        }
+       function launchGame(game) {
+    try {
+        const baseUrl = window.location.origin;
+        console.log('Base URL:', baseUrl); // Для отладки
+        
+        const params = new URLSearchParams();
+        params.append('user_id', CURRENT_USER.id);
+        params.append('first_name', CURRENT_USER.first_name);
+        if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
+        if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
+        
+        const gameUrl = `${baseUrl}/${game}?${params.toString()}`;
+        console.log('Redirecting to:', gameUrl); // Для отладки
+        
+        window.location.href = gameUrl;
+    } catch (error) {
+        console.error('Game launch error:', error);
+        alert('Произошла ошибка при запуске игры. Попробуйте позже.');
+    }
+}
 
         // Показать модальное окно пополнения
         function showDepositModal() {
