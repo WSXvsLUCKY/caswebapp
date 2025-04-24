@@ -1,21 +1,18 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import random
-from collections import deque
 import logging
 import psycopg2
 from psycopg2 import OperationalError
 import os
 from datetime import datetime
+import requests
 
 app = Flask(__name__)
 CORS(app)
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Конфигурация PostgreSQL для Render.com
+# Конфигурация
+BOT_TOKEN = '7112560650:AAGGs3JMHouw2T5phdfrNZgaDZODxNHrtF0'
 POSTGRES_CONFIG = {
     'host': 'dpg-d058p7je5dus73cm4bqg-a.oregon-postgres.render.com',
     'port': 5432,
@@ -24,8 +21,9 @@ POSTGRES_CONFIG = {
     'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
 }
 
-# Глобальные переменные для хранения активных игр
-mines_games = {}
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def create_db_connection():
     """Создает соединение с PostgreSQL базой данных"""
@@ -45,7 +43,7 @@ def init_db():
     try:
         cursor = connection.cursor()
         
-        # Создаем таблицу пользователей
+        # Создаем таблицу пользователей с полем для фото
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
@@ -53,6 +51,7 @@ def init_db():
             first_name VARCHAR(255),
             balance DECIMAL(15, 2) DEFAULT 1000.00,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
+            photo_url VARCHAR(512),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -107,9 +106,11 @@ class User:
         self.user_id = user_data['id']
         self.username = user_data.get('username', '')
         self.first_name = user_data.get('first_name', 'User')
+        self.photo_id = user_data.get('photo_id', '')
         self.balance = 1000.00
         self.auto_cashout = 2.00
         self.current_bet = 0
+        self.photo_url = ''
         self.load_from_db()
 
     def load_from_db(self):
@@ -121,26 +122,75 @@ class User:
         try:
             cursor = connection.cursor()
             cursor.execute("""
-            SELECT username, first_name, balance, auto_cashout 
+            SELECT username, first_name, balance, auto_cashout, photo_url 
             FROM users WHERE user_id = %s
             """, (self.user_id,))
             user = cursor.fetchone()
             
             if not user:
                 # Создаем нового пользователя
+                if self.photo_id:
+                    self.photo_url = self.get_telegram_photo_url()
+                
                 cursor.execute("""
-                INSERT INTO users (user_id, username, first_name, balance, auto_cashout)
-                VALUES (%s, %s, %s, %s, %s)
-                """, (self.user_id, self.username, self.first_name, self.balance, self.auto_cashout))
+                INSERT INTO users (user_id, username, first_name, balance, auto_cashout, photo_url)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """, (self.user_id, self.username, self.first_name, self.balance, self.auto_cashout, self.photo_url))
                 connection.commit()
             else:
                 self.username = user[0] or self.username
                 self.first_name = user[1] or self.first_name
                 self.balance = float(user[2])
                 self.auto_cashout = float(user[3])
+                self.photo_url = user[4] or ''
                 
+                # Обновляем фото, если оно изменилось
+                if self.photo_id and not self.photo_url:
+                    self.photo_url = self.get_telegram_photo_url()
+                    self.update_photo_url()
         except OperationalError as e:
             logger.error(f"Error loading user from DB: {e}")
+        finally:
+            if connection:
+                connection.close()
+
+    def get_telegram_photo_url(self):
+        """Получает URL фото профиля из Telegram"""
+        if not self.photo_id:
+            return ''
+        
+        try:
+            # Получаем информацию о файле
+            file_info_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={self.photo_id}"
+            response = requests.get(file_info_url)
+            if response.status_code == 200:
+                file_path = response.json()['result']['file_path']
+                return f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+        except Exception as e:
+            logger.error(f"Error getting Telegram photo URL: {e}")
+        
+        return ''
+
+    def update_photo_url(self):
+        """Обновляет URL фото в базе данных"""
+        if not self.photo_url:
+            return
+            
+        connection = create_db_connection()
+        if not connection:
+            return
+            
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users 
+            SET photo_url = %s 
+            WHERE user_id = %s
+            """, (self.photo_url, self.user_id))
+            connection.commit()
+        except OperationalError as e:
+            logger.error(f"Error updating photo URL: {e}")
+            connection.rollback()
         finally:
             if connection:
                 connection.close()
@@ -237,40 +287,135 @@ class User:
 # Маршруты для страниц
 @app.route('/')
 def home():
-    # Получаем данные пользователя из параметров URL
     user_data = {
         'id': request.args.get('user_id', type=int) or 0,
         'username': request.args.get('username', ''),
-        'first_name': request.args.get('first_name', 'Игрок')
+        'first_name': request.args.get('first_name', 'Игрок'),
+        'photo_id': request.args.get('photo_id', '')
     }
+    
+    # Получаем URL фото
+    photo_url = ''
+    if user_data['photo_id']:
+        user = User(user_data)
+        photo_url = user.photo_url
+    
     return render_template('menu.html', 
                          user_id=user_data['id'],
                          username=user_data['username'],
-                         first_name=user_data['first_name'])
+                         first_name=user_data['first_name'],
+                         photo_url=photo_url)
 
 @app.route('/aviator')
 def aviator():
     user_data = {
         'id': request.args.get('user_id', type=int) or 0,
         'username': request.args.get('username', ''),
-        'first_name': request.args.get('first_name', 'Игрок')
+        'first_name': request.args.get('first_name', 'Игрок'),
+        'photo_id': request.args.get('photo_id', '')
     }
+    
+    # Получаем URL фото
+    photo_url = ''
+    if user_data['photo_id']:
+        user = User(user_data)
+        photo_url = user.photo_url
+    
     return render_template('aviator.html', 
                          user_id=user_data['id'],
                          username=user_data['username'],
-                         first_name=user_data['first_name'])
+                         first_name=user_data['first_name'],
+                         photo_url=photo_url)
 
 @app.route('/mines')
 def mines():
     user_data = {
         'id': request.args.get('user_id', type=int) or 0,
         'username': request.args.get('username', ''),
-        'first_name': request.args.get('first_name', 'Игрок')
+        'first_name': request.args.get('first_name', 'Игрок'),
+        'photo_id': request.args.get('photo_id', '')
     }
+    
+    # Получаем URL фото
+    photo_url = ''
+    if user_data['photo_id']:
+        user = User(user_data)
+        photo_url = user.photo_url
+    
     return render_template('mines.html', 
                          user_id=user_data['id'],
                          username=user_data['username'],
-                         first_name=user_data['first_name'])
+                         first_name=user_data['first_name'],
+                         photo_url=photo_url)
+
+# API для работы с пользователем
+@app.route('/api/user', methods=['POST'])
+def get_user():
+    try:
+        data = request.get_json()
+        user = User(data['user'])
+        
+        return jsonify({
+            'status': 'success',
+            'user': {
+                'id': user.user_id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'balance': user.balance,
+                'auto_cashout': user.auto_cashout,
+                'photo_url': user.photo_url
+            }
+        })
+    except Exception as e:
+        logger.error(f"User data error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+
+@app.route('/api/user/photo', methods=['GET'])
+def get_user_photo():
+    photo_id = request.args.get('photo_id')
+    if not photo_id:
+        return jsonify({'status': 'error', 'message': 'No photo ID provided'}), 400
+    
+    try:
+        # Получаем информацию о файле
+        file_info_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={photo_id}"
+        response = requests.get(file_info_url)
+        
+        if response.status_code != 200:
+            return jsonify({'status': 'error', 'message': 'Failed to get file info'}), 400
+            
+        file_path = response.json()['result']['file_path']
+        photo_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+        
+        return jsonify({
+            'status': 'success',
+            'photo_url': photo_url
+        })
+    except Exception as e:
+        logger.error(f"Error getting user photo: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to get photo'}), 500
+
+@app.route('/api/user/update_balance', methods=['POST'])
+def update_user_balance():
+    try:
+        data = request.get_json()
+        user = User({
+            'id': data['user_id'],
+            'first_name': 'Temp',
+            'username': 'temp'
+        })
+        
+        amount = float(data['amount'])
+        if not user.update_balance(amount):
+            return jsonify({'status': 'error', 'message': 'Database error'}), 500
+            
+        return jsonify({
+            'status': 'success',
+            'new_balance': user.balance
+        })
+    except Exception as e:
+        logger.error(f"Update balance error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 # API для Авиатора
 @app.route('/api/aviator/init', methods=['POST'])
@@ -288,7 +433,8 @@ def aviator_init():
             'user': {
                 'id': user.user_id,
                 'first_name': user.first_name,
-                'username': user.username
+                'username': user.username,
+                'photo_url': user.photo_url
             }
         })
     except Exception as e:
