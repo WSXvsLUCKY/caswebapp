@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авиатор</title>
+    <style>
+        :root {
+            --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --card-bg: rgba(30, 30, 60, 0.7);
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --accent: #00f5ff;
+            --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--main-gradient);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .balance {
+            background: rgba(0, 184, 148, 0.15);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            border: 1px solid var(--accent);
+        }
+        
+        .game-area {
+            height: 300px;
+            background: linear-gradient(180deg, #0f3460, #1a1a2e);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .airplane {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300f5ff"><path d="M22 16.21v-1.895L14 8V4a2 2 0 0 0-4 0v4l-8 6.315v1.895l8-2.526V18l-2 2v2l3.5-1 3.5 1v-2l-2-2v-4.316l8 2.526z"/></svg>');
+            background-size: contain;
+            transition: all 0.5s ease;
+            filter: drop-shadow(0 0 5px rgba(0, 245, 255, 0.7));
+            z-index: 10;
+        }
+        
+        .airplane.crash {
+            animation: crash 1.5s ease-in forwards;
+            transform: translateX(-50%) rotate(180deg);
+        }
+        
+        @keyframes crash {
+            0% { bottom: calc(50% - 30px); }
+            100% { bottom: -100px; }
+        }
+        
+        .multiplier {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: var(--text-glow);
+            border: 1px solid var(--accent);
+            z-index: 10;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .bet-control {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-bet {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+        }
+        
+        .btn-bet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(37, 117, 252, 0.7);
+        }
+        
+        .btn-cashout {
+            background: linear-gradient(to right, #00b894, #55efc4);
+            color: #000;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 184, 148, 0.5);
+        }
+        
+        .btn-auto {
+            background: linear-gradient(to right, #d63031, #ff7675);
+            color: white;
+            box-shadow: 0 0 15px rgba(214, 48, 49, 0.5);
+        }
+        
+        .history {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        
+        .history-item {
+            min-width: 50px;
+            padding: 5px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .win {
+            color: #55efc4;
+        }
+        
+        .lose {
+            color: #ff7675;
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: #00b894;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
+        }
+        
+        .show {
+            opacity: 1;
+        }
+        
+        .error {
+            background: #d63031;
+            box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
+        }
+        
+        /* Стили для эффекта взлета (вертикальные линии) */
+        .flight-line {
+            position: absolute;
+            width: 1px;
+            background: rgba(0, 245, 255, 0.7);
+            z-index: 1;
+            transform: translateY(-100%);
+            animation: flyDown linear;
+        }
+        
+        @keyframes flyDown {
+            0% { transform: translateY(-100%); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(300px); opacity: 0; }
+        }
+        
+        /* Эффект взрыва */
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,100,100,0.8) 0%, rgba(255,50,50,0) 70%);
+            border-radius: 50%;
+            z-index: 5;
+            animation: explode 0.5s ease-out forwards;
+        }
+        
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 style="margin: 0; text-shadow: var(--text-glow);">✈️ Авиатор</h1>
+            <div class="balance">💰 <span id="balance">100</span>₽</div>
+        </div>
+        
+        <div class="game-area">
+            <div class="multiplier" id="multiplier">1.00x</div>
+            <div class="airplane" id="airplane"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="bet-control">
+                <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки">
+                <button class="btn-bet" id="btn-bet">СТАВКА</button>
+            </div>
+            <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
+            <button class="btn-auto" id="btn-auto">АВТО (2x)</button>
+        </div>
+        
+        <div class="history" id="history"></div>
+    </div>
+    
+    <div class="message" id="message"></div>
+    
+    <script>
+        let gameState = {
+            balance: 100,
+            betAmount: 10,
+            isPlaying: false,
+            multiplier: 1.0,
+            autoCashout: 0,
+            crashPoint: 0,
+            interval: null,
+            currentBet: 0,
+            flightLinesInterval: null
+        };
+        
+        const elements = {
+            balance: document.getElementById('balance'),
+            betAmount: document.getElementById('bet-amount'),
+            btnBet: document.getElementById('btn-bet'),
+            btnCashout: document.getElementById('btn-cashout'),
+            btnAuto: document.getElementById('btn-auto'),
+            multiplier: document.getElementById('multiplier'),
+            airplane: document.getElementById('airplane'),
+            history: document.getElementById('history'),
+            message: document.getElementById('message'),
+            gameArea: document.querySelector('.game-area')
+        };
+        
+        // Инициализация игры
+        function initGame() {
+            updateBalance();
+            
+            // Назначение обработчиков событий
+            elements.btnBet.addEventListener('click', placeBet);
+            elements.btnCashout.addEventListener('click', cashOut);
+            elements.btnAuto.addEventListener('click', toggleAutoCashout);
+            elements.betAmount.addEventListener('input', validateBet);
+        }
+        
+        // Размещение ставки
+        function placeBet() {
+            if (gameState.isPlaying) {
+                showMessage('Завершите текущую игру!', true);
+                return;
+            }
+            
+            const betAmount = parseInt(elements.betAmount.value);
+            
+            if (isNaN(betAmount) || betAmount < 10) {
+                showMessage('Минимальная ставка 10₽', true);
+                return;
+            }
+            
+            if (betAmount > gameState.balance) {
+                showMessage('Недостаточно средств', true);
+                return;
+            }
+            
+            // Фиксируем текущую ставку и списываем с баланса
+            gameState.currentBet = betAmount;
+            gameState.balance -= betAmount;
+            gameState.isPlaying = true;
+            gameState.crashPoint = (Math.random() * 5 + 1).toFixed(2); // Случайный крах от 1.00 до 6.00
+            
+            updateBalance();
+            updateControls();
+            startGame();
+        }
+        
+        // Забрать выигрыш
+        function cashOut() {
+            if (!gameState.isPlaying) return;
+            
+            const winAmount = Math.floor(gameState.currentBet * gameState.multiplier);
+            const profit = winAmount - gameState.currentBet;
+            
+            gameState.balance += winAmount;
+            showMessage(`Вы выиграли ${profit}₽`);
+            endGame(true);
+        }
+        
+        // Настройка авто-вывода
+        function toggleAutoCashout() {
+            if (gameState.autoCashout === 0) {
+                gameState.autoCashout = 2.0;
+                elements.btnAuto.textContent = `АВТО (${gameState.autoCashout}x)`;
+                elements.btnAuto.classList.add('btn-cashout');
+                elements.btnAuto.classList.remove('btn-auto');
+                showMessage(`Авто-вывод установлен на ${gameState.autoCashout}x`);
+            } else {
+                gameState.autoCashout = 0;
+                elements.btnAuto.textContent = 'АВТО (2x)';
+                elements.btnAuto.classList.add('btn-auto');
+                elements.btnAuto.classList.remove('btn-cashout');
+                showMessage('Авто-вывод отключен');
+            }
+        }
+        
+        // Создание эффекта взлета (вертикальные линии)
+        function createFlightLines() {
+            // Очищаем предыдущие линии
+            clearFlightLines();
+            
+            // Создаем новые линии
+            gameState.flightLinesInterval = setInterval(() => {
+                // Случайное количество линий (3-8)
+                const lineCount = Math.floor(Math.random() * 6) + 3;
+                
+                for (let i = 0; i < lineCount; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'flight-line';
+                    
+                    // Случайная высота линии (10-40px)
+                    const height = Math.floor(Math.random() * 30) + 10;
+                    line.style.height = `${height}px`;
+                    
+                    // Случайная позиция по горизонтали
+                    const left = Math.floor(Math.random() * elements.gameArea.offsetWidth);
+                    line.style.left = `${left}px`;
+                    
+                    // Случайная скорость анимации (0.3-1s)
+                    const duration = (Math.random() * 0.7) + 0.3;
+                    line.style.animationDuration = `${duration}s`;
+                    
+                    elements.gameArea.appendChild(line);
+                    
+                    // Удаляем линию после анимации
+                    setTimeout(() => {
+                        if (line.parentNode) {
+                            line.parentNode.removeChild(line);
+                        }
+                    }, duration * 1000);
+                }
+            }, 100);
+        }
+        
+        // Очистка эффекта взлета
+        function clearFlightLines() {
+            clearInterval(gameState.flightLinesInterval);
+            const lines = document.querySelectorAll('.flight-line');
+            lines.forEach(line => {
+                if (line.parentNode) {
+                    line.parentNode.removeChild(line);
+                }
+            });
+        }
+        
+        // Создание эффекта взрыва
+        function createExplosion() {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = `${elements.airplane.offsetLeft - 20}px`;
+            explosion.style.top = `${elements.airplane.offsetTop - 20}px`;
+            elements.gameArea.appendChild(explosion);
+            
+            setTimeout(() => {
+                if (explosion.parentNode) {
+                    explosion.parentNode.removeChild(explosion);
+                }
+            }, 500);
+        }
+        
+        // Начало игры
+        function startGame() {
+            gameState.multiplier = 1.0;
+            elements.multiplier.textContent = '1.00x';
+            elements.airplane.style.bottom = '50px';
+            elements.airplane.classList.remove('crash');
+            
+            // Анимация полета самолета
+            setTimeout(() => {
+                elements.airplane.style.bottom = 'calc(50% - 30px)';
+                
+                // Запускаем эффект линий взлета
+                createFlightLines();
+                
+                // Запуск игры
+                gameState.interval = setInterval(() => {
+                    gameState.multiplier = parseFloat((gameState.multiplier + 0.01).toFixed(2));
+                    elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
+                    
+                    // Проверка авто-вывода
+                    if (gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout) {
+                        cashOut();
+                    }
+                    
+                    // Проверка краха
+                    if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
+                        // Эффект взрыва и падения
+                        createExplosion();
+                        elements.airplane.classList.add('crash');
+                        
+                        setTimeout(() => {
+                            endGame(false);
+                            showMessage(`Самолет разбился! x${gameState.crashPoint}`, true);
+                        }, 500);
+                    }
+                }, 50);
+            }, 1000);
+        }
+        
+        // Окончание игры
+        function endGame(win) {
+            clearInterval(gameState.interval);
+            clearFlightLines();
+            gameState.isPlaying = false;
+            
+            if (!win) {
+                showMessage(`Вы проиграли ${gameState.currentBet}₽`, true);
+            }
+            
+            updateBalance();
+            updateControls();
+            addToHistory(gameState.multiplier, win);
+        }
+        
+        // Валидация ставки
+        function validateBet() {
+            const value = parseInt(elements.betAmount.value);
+            
+            if (isNaN(value)) {
+                elements.betAmount.value = '';
+                return;
+            }
+            
+            if (value < 10) {
+                return;
+            }
+            
+            if (value > gameState.balance) {
+                elements.betAmount.value = gameState.balance;
+            }
+        }
+        
+        // Обновление баланса
+        function updateBalance() {
+            elements.balance.textContent = gameState.balance;
+        }
+        
+        // Обновление элементов управления
+        function updateControls() {
+            elements.btnBet.disabled = gameState.isPlaying;
+            elements.btnCashout.disabled = !gameState.isPlaying;
+            elements.betAmount.disabled = gameState.isPlaying;
+        }
+        
+        // Добавление в историю
+        function addToHistory(multiplier, win) {
+            const div = document.createElement('div');
+            div.className = `history-item ${win ? 'win' : 'lose'}`;
+            div.textContent = `${multiplier.toFixed(2)}x`;
+            elements.history.prepend(div);
+            
+            // Ограничиваем историю 10 последними играми
+            if (elements.history.children.length > 10) {
+                elements.history.removeChild(elements.history.lastChild);
+            }
+        }
+        
+        // Показать сообщение
+        function showMessage(text, isError = false) {
+            elements.message.textContent = text;
+            elements.message.className = 'message';
+            if (isError) elements.message.classList.add('error');
+            elements.message.classList.add('show');
+            
+            setTimeout(() => {
+                elements.message.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Royal Mines Tower</title>
+  <style>
+    :root {
+      --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      --card-bg: rgba(30, 30, 60, 0.7);
+      --primary: #6a11cb;
+      --secondary: #2575fc;
+      --accent: #00f5ff;
+      --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
+      --cell-size: 50px;
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--main-gradient);
+      color: white;
+      margin: 0;
+      padding: 20px;
+      height: 100vh;
+    }
+
+    .game-container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .balance {
+      background: rgba(0, 184, 148, 0.15);
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .row-label {
+      width: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .cell:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+    }
+
+    .cell.revealed {
+      background: rgba(0, 184, 148, 0.2);
+      border: 1px solid rgba(0, 245, 255, 0.5);
+    }
+
+    .cell.mine {
+      background: rgba(214, 48, 49, 0.3);
+      border: 1px solid rgba(255, 100, 100, 0.7);
+    }
+
+    .cell.mine::before {
+      content: '💣';
+      font-size: 24px;
+    }
+
+    .cell.gem {
+      background: rgba(106, 17, 203, 0.3);
+      border: 1px solid rgba(155, 89, 255, 0.7);
+    }
+
+    .cell.gem::before {
+      content: '💎';
+      font-size: 24px;
+    }
+
+    .cell.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .bet-control {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 15px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    button {
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-bet {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+    }
+
+    .btn-cashout {
+      background: linear-gradient(to right, #00b894, #55efc4);
+      color: #000;
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(0, 184, 148, 0.5);
+    }
+
+    .message {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 15px 25px;
+      border-radius: 10px;
+      background: #00b894;
+      color: white;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .show {
+      opacity: 1;
+    }
+
+    .error {
+      background: #d63031;
+    }
+
+    .multiplier-display {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 24px;
+      color: var(--accent);
+      text-shadow: var(--text-glow);
+    }
+
+    .current-row {
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <h1 style="margin: 0; text-shadow: var(--text-glow);">💎 Royal Mines</h1>
+      <div class="balance">💰 <span id="balance">100</span>₽</div>
+    </div>
+
+    <div class="multiplier-display">
+      Множитель: <span id="current-multiplier">1.00x</span>
+    </div>
+
+    <div class="current-row" id="current-row">
+      Текущий ряд: <span id="row-number">1</span>
+    </div>
+
+    <div id="game-area"></div>
+
+    <div class="controls">
+      <div class="bet-control">
+        <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" />
+        <button class="btn-bet" id="btn-bet">СТАВКА</button>
+      </div>
+      <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
+    </div>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script>
+    const gameState = {
+      balance: 100,
+      betAmount: 10,
+      isPlaying: false,
+      multiplier: 1.0,
+      rows: 6,
+      cols: 3,
+      currentRow: 5, // Нижний ряд
+      minePositions: [],
+      gameEnded: false
+    };
+
+    const elements = {
+      balance: document.getElementById("balance"),
+      betAmount: document.getElementById("bet-amount"),
+      btnBet: document.getElementById("btn-bet"),
+      btnCashout: document.getElementById("btn-cashout"),
+      currentMultiplier: document.getElementById("current-multiplier"),
+      gameArea: document.getElementById("game-area"),
+      message: document.getElementById("message"),
+      rowNumber: document.getElementById("row-number")
+    };
+
+    function updateBalance() {
+      elements.balance.textContent = gameState.balance.toFixed(2);
+    }
+
+    function validateBet() {
+      let bet = parseFloat(elements.betAmount.value);
+      if (isNaN(bet) || bet <= 0) bet = 1;
+      if (bet > gameState.balance) bet = gameState.balance;
+      gameState.betAmount = bet;
+    }
+
+    function showMessage(msg, isError = false) {
+      elements.message.textContent = msg;
+      elements.message.className = "message show" + (isError ? " error" : "");
+      setTimeout(() => elements.message.classList.remove("show"), 3000);
+    }
+
+    function createGameBoard() {
+      elements.gameArea.innerHTML = "";
+      gameState.board = [];
+
+      for (let r = 0; r < gameState.rows; r++) {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+        const label = document.createElement("div");
+        label.className = "row-label";
+        label.textContent = gameState.rows - r;
+        rowDiv.appendChild(label);
+
+        const rowCells = [];
+        for (let c = 0; c < gameState.cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "cell disabled";
+          rowDiv.appendChild(cell);
+          rowCells.push(cell);
+        }
+
+        gameState.board.unshift(rowCells); // добавляем вверх (снизу вверх)
+        elements.gameArea.prepend(rowDiv);
+      }
+    }
+
+    function startGame() {
+      validateBet();
+      if (gameState.betAmount > gameState.balance) {
+        showMessage("Недостаточно средств", true);
+        return;
+      }
+
+      gameState.balance -= gameState.betAmount;
+      gameState.isPlaying = true;
+      gameState.multiplier = 1.0;
+      gameState.currentRow = gameState.rows - 1;
+      gameState.gameEnded = false;
+      gameState.minePositions = Array.from({ length: gameState.rows }, () =>
+        Math.floor(Math.random() * gameState.cols)
+      );
+
+      createGameBoard();
+      enableRow(gameState.currentRow);
+      updateUI();
+    }
+
+    function enableRow(rowIndex) {
+      if (rowIndex < 0) return;
+      gameState.board[rowIndex].forEach((cell, colIndex) => {
+        cell.classList.remove("disabled");
+        cell.onclick = () => selectCell(rowIndex, colIndex);
+      });
+      elements.rowNumber.textContent = gameState.rows - rowIndex;
+    }
+
+    function selectCell(row, col) {
+      if (!gameState.isPlaying || gameState.gameEnded) return;
+
+      const cell = gameState.board[row][col];
+      const isMine = gameState.minePositions[row] === col;
+
+      cell.classList.add("revealed");
+      if (isMine) {
+        cell.classList.add("mine");
+        gameState.gameEnded = true;
+        showMessage("Вы проиграли!", true);
+        return;
+      }
+
+      cell.classList.add("gem");
+      gameState.multiplier += 0.25;
+      gameState.currentRow--;
+
+      if (gameState.currentRow < 0) {
+        showMessage("Вы прошли всю башню!", false);
+      const winnings = gameState.betAmount * gameState.multiplier;
+      gameState.balance += winnings;
+      showMessage(`Вы забрали ${winnings.toFixed(2)}₽`);
+        gameState.gameEnded = true;
+      } else {
+        enableRow(gameState.currentRow);
+      }
+
+      updateUI();
+    }
+
+    function cashOut() {
+      if (!gameState.isPlaying || gameState.gameEnded) return;
+      const winnings = gameState.betAmount * gameState.multiplier;
+      gameState.balance += winnings;
+      showMessage(`Вы забрали ${winnings.toFixed(2)}₽`);
+      gameState.gameEnded = true;
+      updateUI();
+    }
+
+    function updateUI() {
+      updateBalance();
+      elements.currentMultiplier.textContent = gameState.multiplier.toFixed(2) + "x";
+      elements.btnCashout.disabled = !gameState.isPlaying || gameState.gameEnded;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateBalance();
+      createGameBoard();
+      elements.btnBet.onclick = startGame;
+      elements.btnCashout.onclick = cashOut;
+    });
+  </script>
+</body>
+</html>

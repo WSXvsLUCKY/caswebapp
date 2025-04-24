@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Куб</title>
+    <style>
+        :root {
+            --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --card-bg: rgba(30, 30, 60, 0.7);
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --accent: #00f5ff;
+            --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--main-gradient);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .balance {
+            background: rgba(0, 184, 148, 0.15);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            border: 1px solid var(--accent);
+        }
+        
+        .bet-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .game-area {
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .dice {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+            color: #1a1a2e;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            transform-style: preserve-3d;
+            transition: transform 1s;
+            margin-bottom: 30px;
+        }
+        
+        .dice.rolling {
+            animation: roll 1s ease-out;
+        }
+        
+        @keyframes roll {
+            0% { transform: rotateX(0) rotateY(0); }
+            100% { transform: rotateX(720deg) rotateY(720deg); }
+        }
+        
+        .result {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: var(--text-glow);
+            border: 1px solid var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .result.show {
+            opacity: 1;
+        }
+        
+        .win {
+            color: #55efc4;
+        }
+        
+        .lose {
+            color: #ff7675;
+        }
+        
+        .bet-selector {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .bet-toggle {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+        }
+        
+        .bet-toggle:after {
+            content: "▼";
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        
+        .bet-toggle.open:after {
+            transform: rotate(180deg);
+        }
+        
+        .bet-options {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .bet-options.visible {
+            display: grid;
+        }
+        
+        .bet-option {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+        
+        .bet-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .bet-option.active {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+        }
+        
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-bet {
+            width: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+            font-size: 16px;
+        }
+        
+        .btn-bet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(37, 117, 252, 0.7);
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: #00b894;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
+        }
+        
+        .show {
+            opacity: 1;
+        }
+        
+        .error {
+            background: #d63031;
+            box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .selected-bet {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--accent);
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .selected-bet.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 style="margin: 0; text-shadow: var(--text-glow);">🎲 Куб</h1>
+            <div class="balance">💰 <span id="balance">100</span>₽</div>
+        </div>
+        
+        <div class="game-area">
+            <div class="dice" id="dice">?</div>
+            <div class="result" id="result"></div>
+        </div>
+        
+        <div class="bet-control">
+            <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
+        </div>
+        
+        <div class="bet-selector">
+            <button class="bet-toggle" id="bet-toggle">Выбрать тип ставки</button>
+            <div class="selected-bet" id="selected-bet"></div>
+            <div class="bet-options" id="bet-options">
+                <div class="bet-option" data-bet="even">Чёт</div>
+                <div class="bet-option" data-bet="odd">Нечёт</div>
+                <div class="bet-option" data-bet="less">Меньше 4</div>
+                <div class="bet-option" data-bet="more">Больше 3</div>
+                <div class="bet-option" data-bet="duel1-3">1 или 3</div>
+                <div class="bet-option" data-bet="duel2-4">2 или 4</div>
+                <div class="bet-option" data-bet="duel5-6">5 или 6</div>
+                <div class="bet-option" data-bet="exact1">Точно 1</div>
+                <div class="bet-option" data-bet="exact6">Точно 6</div>
+            </div>
+        </div>
+        
+        <button class="btn-bet" id="btn-bet">СДЕЛАТЬ СТАВКУ</button>
+    </div>
+    
+    <div class="message" id="message"></div>
+    
+    <script>
+        const gameState = {
+            balance: 100,
+            betAmount: 10,
+            selectedBet: null,
+            selectedBetName: '',
+            isPlaying: false
+        };
+        
+        const elements = {
+            balance: document.getElementById('balance'),
+            betAmount: document.getElementById('bet-amount'),
+            btnBet: document.getElementById('btn-bet'),
+            dice: document.getElementById('dice'),
+            result: document.getElementById('result'),
+            message: document.getElementById('message'),
+            betOptions: document.getElementById('bet-options'),
+            betToggle: document.getElementById('bet-toggle'),
+            selectedBetDisplay: document.getElementById('selected-bet')
+        };
+        
+        // Инициализация игры
+        function initGame() {
+            updateBalance();
+            
+            // Назначение обработчиков событий
+            elements.btnBet.addEventListener('click', placeBet);
+            elements.betAmount.addEventListener('input', validateBet);
+            elements.betToggle.addEventListener('click', toggleBetOptions);
+            
+            // Выбор типа ставки
+            document.querySelectorAll('.bet-option').forEach(option => {
+                option.addEventListener('click', () => selectBet(option));
+            });
+        }
+        
+        // Переключение отображения вариантов ставок
+        function toggleBetOptions() {
+            elements.betToggle.classList.toggle('open');
+            elements.betOptions.classList.toggle('visible');
+        }
+        
+        // Выбор типа ставки
+        function selectBet(option) {
+            if (gameState.isPlaying) return;
+            
+            document.querySelectorAll('.bet-option').forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+            gameState.selectedBet = option.dataset.bet;
+            gameState.selectedBetName = option.textContent;
+            
+            // Обновляем отображение выбранной ставки
+            elements.selectedBetDisplay.textContent = `Выбрано: ${gameState.selectedBetName}`;
+            elements.selectedBetDisplay.classList.add('visible');
+            
+            // Закрываем меню выбора
+            elements.betToggle.classList.remove('open');
+            elements.betOptions.classList.remove('visible');
+            elements.betToggle.textContent = 'Изменить ставку';
+        }
+        
+        // Размещение ставки
+        function placeBet() {
+            if (gameState.isPlaying) {
+                showMessage('Дождитесь завершения текущей игры!', true);
+                return;
+            }
+            
+            const betAmount = parseInt(elements.betAmount.value);
+            
+            if (isNaN(betAmount)) {
+                showMessage('Введите сумму ставки', true);
+                return;
+            }
+            
+            if (betAmount < 10) {
+                showMessage('Минимальная ставка 10₽', true);
+                return;
+            }
+            
+            if (betAmount > gameState.balance) {
+                showMessage('Недостаточно средств', true);
+                return;
+            }
+            
+            if (!gameState.selectedBet) {
+                showMessage('Выберите тип ставки', true);
+                return;
+            }
+            
+            // Фиксируем текущую ставку и списываем с баланса
+            gameState.betAmount = betAmount;
+            gameState.balance -= betAmount;
+            gameState.isPlaying = true;
+            
+            updateBalance();
+            rollDice();
+        }
+        
+        // Бросок кубика
+        function rollDice() {
+            elements.dice.textContent = '?';
+            elements.dice.classList.add('rolling');
+            elements.result.classList.remove('show');
+            
+            // Запускаем анимацию броска
+            setTimeout(() => {
+                elements.dice.classList.remove('rolling');
+                
+                // Генерируем случайный результат (1-6)
+                const diceValue = Math.floor(Math.random() * 6) + 1;
+                elements.dice.textContent = diceValue;
+                
+                // Проверяем результат ставки
+                checkResult(diceValue);
+            }, 1000);
+        }
+        
+        // Проверка результата
+        function checkResult(diceValue) {
+            let win = false;
+            let multiplier = 1;
+            let resultText = '';
+            
+            switch(gameState.selectedBet) {
+                case 'even':
+                    win = diceValue % 2 === 0;
+                    multiplier = 2;
+                    resultText = win ? 'Чёт! Вы выиграли' : 'Нечёт! Вы проиграли';
+                    break;
+                case 'odd':
+                    win = diceValue % 2 !== 0;
+                    multiplier = 2;
+                    resultText = win ? 'Нечёт! Вы выиграли' : 'Чёт! Вы проиграли';
+                    break;
+                case 'less':
+                    win = diceValue < 4;
+                    multiplier = 1.5;
+                    resultText = win ? 'Меньше 4! Вы выиграли' : '4 или больше! Вы проиграли';
+                    break;
+                case 'more':
+                    win = diceValue > 3;
+                    multiplier = 1.5;
+                    resultText = win ? 'Больше 3! Вы выиграли' : '3 или меньше! Вы проиграли';
+                    break;
+                case 'duel1-3':
+                    win = diceValue === 1 || diceValue === 3;
+                    multiplier = 3;
+                    resultText = win ? '1 или 3! Вы выиграли' : 'Не 1 и не 3! Вы проиграли';
+                    break;
+                case 'duel2-4':
+                    win = diceValue === 2 || diceValue === 4;
+                    multiplier = 3;
+                    resultText = win ? '2 или 4! Вы выиграли' : 'Не 2 и не 4! Вы проиграли';
+                    break;
+                case 'duel5-6':
+                    win = diceValue === 5 || diceValue === 6;
+                    multiplier = 3;
+                    resultText = win ? '5 или 6! Вы выиграли' : 'Не 5 и не 6! Вы проиграли';
+                    break;
+                case 'exact1':
+                    win = diceValue === 1;
+                    multiplier = 6;
+                    resultText = win ? 'Точно 1! Вы выиграли' : 'Не 1! Вы проиграли';
+                    break;
+                case 'exact6':
+                    win = diceValue === 6;
+                    multiplier = 6;
+                    resultText = win ? 'Точно 6! Вы выиграли' : 'Не 6! Вы проиграли';
+                    break;
+            }
+            
+            // Отображаем результат
+            elements.result.textContent = resultText;
+            elements.result.classList.add(win ? 'win' : 'lose');
+            elements.result.classList.add('show');
+            
+            if (win) {
+                const winAmount = Math.floor(gameState.betAmount * multiplier);
+                gameState.balance += winAmount;
+                showMessage(`Вы выиграли ${winAmount}₽!`);
+            } else {
+                showMessage(`Вы проиграли ${gameState.betAmount}₽`, true);
+            }
+            
+            updateBalance();
+            gameState.isPlaying = false;
+        }
+        
+        // Валидация ставки
+        function validateBet() {
+            const value = parseInt(elements.betAmount.value);
+            
+            if (isNaN(value)) {
+                elements.betAmount.value = '';
+                return;
+            }
+            
+            if (value < 10) {
+                return;
+            }
+            
+            if (value > gameState.balance) {
+                elements.betAmount.value = gameState.balance;
+            }
+        }
+        
+        // Обновление баланса
+        function updateBalance() {
+            elements.balance.textContent = gameState.balance;
+        }
+        
+        // Показать сообщение
+        function showMessage(text, isError = false) {
+            elements.message.textContent = text;
+            elements.message.className = 'message';
+            if (isError) elements.message.classList.add('error');
+            elements.message.classList.add('show');
+            
+            setTimeout(() => {
+                elements.message.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>

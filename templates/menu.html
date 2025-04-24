@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 RandX Game Hub</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Roboto:wght@400;500&display=swap');
+        
+        :root {
+            --gradient-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --neon-blue: #00f5ff;
+            --neon-purple: #9d00ff;
+            --text-glow: 0 0 10px rgba(157, 0, 255, 0.7);
+            --sidebar-bg: rgba(27, 31, 53, 0.8);
+            --header-bg: rgba(27, 31, 53, 0.9);
+            --card-bg: rgba(35, 40, 70, 0.6);
+            --card-hover: rgba(45, 51, 84, 0.8);
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: var(--gradient-bg);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            padding: 12px 20px;
+            background: var(--header-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            opacity: 0.5;
+        }
+        
+        .header .menu {
+            display: flex;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header .menu div {
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header .menu div:hover {
+            background: rgba(0, 245, 255, 0.2);
+            text-shadow: var(--text-glow);
+        }
+        
+        .header .menu div::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--neon-blue);
+            transition: width 0.3s;
+            z-index: 2;
+        }
+        
+        .header .menu div:hover::after {
+            width: 100%;
+        }
+        
+        .balance {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--neon-blue);
+            margin-right: 8px;
+            box-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
+        }
+        
+        .balance-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-right: 8px;
+        }
+        
+        .balance-amount {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            color: #00ff88;
+            font-size: 16px;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+            display: flex;
+            align-items: center;
+        }
+        
+        .balance-amount img {
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+        }
+        
+        .username {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 7px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #9d00ff 0%, #00f5ff 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(157, 0, 255, 0.6);
+        }
+        
+        .btn-success {
+            background: linear-gradient(90deg, #00b09b 0%, #96c93d 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 176, 155, 0.6);
+        }
+        
+        .btn-info {
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(30, 60, 114, 0.6);
+        }
+        
+        .banner {
+            margin: 20px 60px 20px 80px;
+            background: linear-gradient(90deg, #9d00ff 0%, #00f5ff 100%);
+            border-radius: 16px;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 0 25px rgba(157, 0, 255, 0.4);
+            animation: pulse 3s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 25px rgba(157, 0, 255, 0.4); }
+            50% { box-shadow: 0 0 35px rgba(0, 245, 255, 0.6); }
+            100% { box-shadow: 0 0 25px rgba(157, 0, 255, 0.4); }
+        }
+        
+        .banner .text {
+            font-size: 18px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .main-content {
+            padding: 15px;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 25px 60px;
+        }
+        
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-card:hover {
+            background: var(--card-hover);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                transparent 45%,
+                rgba(0, 245, 255, 0.3) 50%,
+                transparent 55%
+            );
+            transform: rotate(30deg);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .game-card:hover::before {
+            opacity: 1;
+            animation: shine 1.5s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: rotate(30deg) translate(-10%, -10%); }
+            100% { transform: rotate(30deg) translate(10%, 10%); }
+        }
+        
+        .game-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        
+        .game-card:hover img {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(157, 0, 255, 0.7));
+        }
+        
+        .game-card div {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            margin-top: 8px;
+            transition: all 0.3s;
+        }
+        
+        .game-card:hover div {
+            color: var(--neon-blue);
+            text-shadow: var(--text-glow);
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(157, 0, 255, 0.1) 0%, transparent 25%),
+                        radial-gradient(circle at 80% 70%, rgba(0, 245, 255, 0.1) 0%, transparent 25%);
+            z-index: -1;
+            animation: float 15s infinite alternate;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-5%, -5%); }
+            100% { transform: translate(5%, 5%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="menu">
+            <div>Меню</div>
+            <div>Рефералы</div>
+            <div>Бонусы</div>
+        </div>
+        <div class="balance">
+            <img src="/static/images/avatar.png" alt="User Avatar" class="user-avatar" id="user-avatar">
+            <div class="balance-info">
+                <div class="balance-amount">
+                    <img src="/static/images/wallet.png" style="width: 16px; height: 16px; margin-right: 5px;">
+                    <span id="balance">0.00</span>
+                </div>
+                <div class="username" id="username">Player</div>
+            </div>
+            <button class="btn btn-success" onclick="showDepositModal()">Пополнить</button>
+            <button class="btn btn-info" onclick="showWithdrawModal()">Вывести</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="banner">
+            <div class="text">Дарим 100 монет за каждого реферала!</div>
+            <button class="btn btn-primary" onclick="showReferralModal()">Пригласить друга</button>
+        </div>
+
+        <div class="games-grid">
+            <div class="game-card" onclick="launchGame('aviator')">
+                <img src="/static/images/aviator.png" alt="Aviator">
+                <div>Aviator</div>
+            </div>
+            <div class="game-card" onclick="launchGame('mines')">
+                <img src="/static/images/mines.png" alt="Mines">
+                <div>Mines</div>
+            </div>
+            <div class="game-card" onclick="launchGame('cubes')">
+                <img src="/static/images/cubes.png" alt="Cubes">
+                <div>Cubes</div>
+            </div>
+            <div class="game-card" onclick="launchGame('tower')">
+                <img src="/static/images/tower.png" alt="Tower">
+                <div>Tower</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div id="depositModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('depositModal')">&times;</span>
+            <h3>Пополнение баланса</h3>
+            <input type="number" id="depositAmount" placeholder="Сумма" min="10">
+            <button class="btn btn-success" onclick="deposit()">Подтвердить</button>
+        </div>
+    </div>
+
+    <div id="withdrawModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('withdrawModal')">&times;</span>
+            <h3>Вывод средств</h3>
+            <input type="number" id="withdrawAmount" placeholder="Сумма" min="10">
+            <button class="btn btn-info" onclick="withdraw()">Подтвердить</button>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--header-bg);
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            border: 1px solid var(--neon-blue);
+        }
+        
+        .modal-content h3 {
+            color: var(--neon-blue);
+            margin-top: 0;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: var(--neon-blue);
+        }
+    </style>
+
+    <script>
+        // Текущий пользователь (в реальном приложении получаем из Telegram)
+        const CURRENT_USER = {
+            id: 12345, // Временное значение для теста
+            username: 'telegram_user',
+            first_name: 'Player'
+        };
+
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: CURRENT_USER
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('username').textContent = data.user.first_name;
+                    document.getElementById('balance').textContent = data.user.balance.toFixed(2);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        // Функции для модальных окон
+        function showDepositModal() {
+            document.getElementById('depositModal').style.display = 'block';
+        }
+
+        function showWithdrawModal() {
+            document.getElementById('withdrawModal').style.display = 'block';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            document.getElementById(id + 'Amount').value = '';
+        }
+
+        // Операции с балансом
+        async function deposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            if (!amount || amount < 10) {
+                alert('Минимальная сумма 10');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/update_balance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: CURRENT_USER.id,
+                        amount: amount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('balance').textContent = data.new_balance.toFixed(2);
+                    closeModal('deposit');
+                    alert('Баланс успешно пополнен!');
+                } else {
+                    alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Deposit error:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        }
+
+        async function withdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (!amount || amount < 10) {
+                alert('Минимальная сумма 10');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/update_balance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: CURRENT_USER.id,
+                        amount: -amount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('balance').textContent = data.new_balance.toFixed(2);
+                    closeModal('withdraw');
+                    alert('Запрос на вывод отправлен!');
+                } else {
+                    alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Withdraw error:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        }
+
+        // Навигация по играм
+        function launchGame(game) {
+            if (game === 'aviator') {
+                window.location.href = '/aviator';
+            } else if (game === 'mines') {
+                window.location.href = '/mines';
+            } else if (game === 'cubes') {
+                window.location.href = '/cubes';
+            } else if (game === 'tower') {
+                window.location.href = '/tower';
+            }
+        }
+
+        // Вспомогательные функции
+        function showReferralModal() {
+            alert('Ваша реферальная ссылка: https://t.me/your_bot?start=ref' + CURRENT_USER.id);
+        }
+
+        // Загружаем данные при старте
+        document.addEventListener('DOMContentLoaded', loadUserData);
+    </script>
+</body>
+</html>
