@@ -485,27 +485,33 @@
         }
 
         // Навигация по играм
-       function launchGame(game) {
-    try {
-        const baseUrl = window.location.origin;
-        console.log('Base URL:', baseUrl); // Для отладки
-        
-        const params = new URLSearchParams();
-        params.append('user_id', CURRENT_USER.id);
-        params.append('first_name', CURRENT_USER.first_name);
-        if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
-        if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
-        
-        const gameUrl = `${baseUrl}/${game}?${params.toString()}`;
-        console.log('Redirecting to:', gameUrl); // Для отладки
-        
-        window.location.href = gameUrl;
-    } catch (error) {
-        console.error('Game launch error:', error);
-        alert('Произошла ошибка при запуске игры. Попробуйте позже.');
-    }
-}
+// Навигация по играм
+    function launchGame(game) {
+    // Создаем URLSearchParams для добавления параметров
+    const params = new URLSearchParams();
+    params.append('user_id', CURRENT_USER.id);
+    params.append('first_name', CURRENT_USER.first_name);
+    if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
+    if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
 
+    // Формируем URL в зависимости от игры
+    let gameUrl;
+    if (game === 'aviator') {
+        gameUrl = '/aviator?' + params.toString();
+    } else if (game === 'mines') {
+        gameUrl = '/mines?' + params.toString();
+    } else if (game === 'cubes') {
+        gameUrl = '/cubes?' + params.toString();
+    } else if (game === 'tower') {
+        gameUrl = '/tower?' + params.toString();
+    } else {
+        alert('Игра не найдена');
+        return;
+    }
+
+    // Перенаправляем
+    window.location.href = gameUrl;
+}
         // Показать модальное окно пополнения
         function showDepositModal() {
             document.getElementById('depositModal').style.display = 'block';
