@@ -322,7 +322,7 @@
                     <img src="/static/images/wallet.png" style="width: 16px; height: 16px; margin-right: 5px;">
                     <span id="balance">0.00</span>
                 </div>
-                <div class="username" id="username">Player</div>
+                <div class="username" id="username">{{ first_name|default('Игрок') }}</div>
             </div>
             <button class="btn btn-success" onclick="showDepositModal()">Пополнить</button>
             <button class="btn btn-info" onclick="showWithdrawModal()">Вывести</button>
@@ -427,12 +427,15 @@
     </style>
 
     <script>
-        // Текущий пользователь (в реальном приложении получаем из Telegram)
+        // Текущий пользователь (получаем данные из шаблона Flask)
         const CURRENT_USER = {
-            id: 12345, // Временное значение для теста
-            username: 'telegram_user',
-            first_name: 'Player'
+            id: {{ user_id|default(0) }},
+            first_name: "{{ first_name|default('Игрок') }}",
+            username: "{{ username|default('') }}"
         };
+
+        // Устанавливаем имя пользователя сразу
+        document.getElementById('username').textContent = CURRENT_USER.first_name;
 
         // Загрузка данных пользователя
         async function loadUserData() {
@@ -450,8 +453,12 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
-                    document.getElementById('username').textContent = data.user.first_name;
                     document.getElementById('balance').textContent = data.user.balance.toFixed(2);
+                    
+                    // Если имя не было передано через URL, используем из базы данных
+                    if (!CURRENT_USER.first_name || CURRENT_USER.first_name === 'Игрок') {
+                        document.getElementById('username').textContent = data.user.first_name;
+                    }
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -543,15 +550,13 @@
 
         // Навигация по играм
         function launchGame(game) {
-            if (game === 'aviator') {
-                window.location.href = '/aviator';
-            } else if (game === 'mines') {
-                window.location.href = '/mines';
-            } else if (game === 'cubes') {
-                window.location.href = '/cubes';
-            } else if (game === 'tower') {
-                window.location.href = '/tower';
-            }
+            // Передаем параметры пользователя в URL игры
+            const url = new URL(`/${game}`, window.location.origin);
+            url.searchParams.append('user_id', CURRENT_USER.id);
+            url.searchParams.append('first_name', CURRENT_USER.first_name);
+            url.searchParams.append('username', CURRENT_USER.username);
+            
+            window.location.href = url.toString();
         }
 
         // Вспомогательные функции
