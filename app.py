@@ -43,7 +43,22 @@ def init_db():
     try:
         cursor = connection.cursor()
         
-        # Создаем таблицу пользователей с полем для фото
+        # Проверяем существование колонки photo_url
+        cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='users' AND column_name='photo_url'
+        """)
+        column_exists = cursor.fetchone()
+        
+        if not column_exists:
+            # Добавляем колонку если она не существует
+            cursor.execute("""
+            ALTER TABLE users ADD COLUMN photo_url VARCHAR(512)
+            """)
+            logger.info("Added photo_url column to users table")
+
+        # Создаем таблицу пользователей (если не существует)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
@@ -121,6 +136,7 @@ class User:
             
         try:
             cursor = connection.cursor()
+            # Запрашиваем только существующие колонки
             cursor.execute("""
             SELECT username, first_name, balance, auto_cashout, photo_url 
             FROM users WHERE user_id = %s
