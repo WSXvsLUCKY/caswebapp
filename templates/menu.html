@@ -33,7 +33,7 @@
         }
         
         .header {
-            padding: 12px 15px;
+            padding: 10px 12px;
             background: var(--header-bg);
             display: flex;
             justify-content: space-between;
@@ -58,7 +58,7 @@
         
         .header .menu {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             position: relative;
             z-index: 1;
         }
@@ -67,9 +67,9 @@
             cursor: pointer;
             font-family: 'Montserrat', sans-serif;
             font-weight: 500;
-            padding: 6px 10px;
-            font-size: 12px;
-            border-radius: 8px;
+            padding: 5px 8px;
+            font-size: 11px;
+            border-radius: 6px;
             transition: all 0.3s;
             position: relative;
             overflow: hidden;
@@ -79,128 +79,265 @@
         .balance {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             position: relative;
             z-index: 1;
         }
         
         .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid var(--neon-blue);
-            margin-right: 8px;
-            box-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
+            border: 1px solid var(--neon-blue);
+            margin-right: 6px;
+            box-shadow: 0 0 6px rgba(0, 245, 255, 0.3);
         }
         
         .balance-info {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            margin-right: 5px;
+            margin-right: 4px;
         }
         
         .balance-amount {
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
             color: #00ff88;
-            font-size: 14px;
-            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+            font-size: 12px;
+            text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
             display: flex;
             align-items: center;
             white-space: nowrap;
         }
         
         .balance-amount img {
-            width: 14px;
-            height: 14px;
-            margin-right: 4px;
+            width: 12px;
+            height: 12px;
+            margin-right: 3px;
         }
         
         .username {
-            font-size: 10px;
+            font-size: 9px;
             opacity: 0.8;
-            margin-top: 3px;
+            margin-top: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 80px;
+            max-width: 70px;
         }
         
         .btn {
-            padding: 6px 10px;
+            padding: 5px 8px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 11px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            font-size: 10px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
             white-space: nowrap;
+            margin-left: 4px;
+        }
+        
+        .btn-success {
+            background: linear-gradient(90deg, #00c853, #5efc82);
+            color: #000;
+        }
+        
+        .btn-info {
+            background: linear-gradient(90deg, #0091ea, #64b5f6);
+            color: #000;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #9d00ff, #d500f9);
+            color: white;
         }
         
         .main-content {
-            padding: 10px;
+            padding: 8px;
             width: 100%;
         }
         
         .banner {
-            margin: 15px;
+            margin: 12px;
             background: linear-gradient(90deg, #9d00ff 0%, #00f5ff 100%);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            box-shadow: 0 0 25px rgba(157, 0, 255, 0.4);
+            box-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
             animation: pulse 3s infinite;
+        }
+        
+        .banner .text {
+            font-size: 12px;
+            margin-bottom: 8px;
         }
         
         .games-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 15px;
+            gap: 12px;
+            margin: 12px;
+        }
+        
+        .game-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .game-card:hover {
+            background: var(--card-hover);
+            transform: translateY(-3px);
+        }
+        
+        .game-card img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+        
+        .game-card div {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--header-bg);
+            margin: 15% auto;
+            padding: 15px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: white;
+        }
+        
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .modal-content button {
+            width: 100%;
+            padding: 8px;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(157, 0, 255, 0.7); }
+            100% { box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); }
         }
         
         /* Адаптивные стили для планшетов и десктопов */
         @media (min-width: 768px) {
             .header {
-                padding: 12px 20px;
+                padding: 12px 15px;
             }
             
             .header .menu {
-                gap: 20px;
+                gap: 12px;
             }
             
             .header .menu div {
-                padding: 6px 12px;
-                font-size: 14px;
-            }
-            
-            .btn {
-                padding: 6px 12px;
+                padding: 6px 10px;
                 font-size: 12px;
             }
             
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .balance-amount {
+                font-size: 13px;
+            }
+            
+            .username {
+                font-size: 10px;
+                max-width: 90px;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+            
             .banner {
-                margin: 20px;
-                padding: 20px;
-                flex-direction: row;
-                justify-content: space-between;
-                text-align: left;
+                margin: 15px;
+                padding: 15px;
+            }
+            
+            .banner .text {
+                font-size: 14px;
             }
             
             .games-grid {
                 grid-template-columns: repeat(4, 1fr);
-                margin: 25px;
+                gap: 15px;
+                margin: 15px;
+            }
+            
+            .game-card img {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .game-card div {
+                font-size: 13px;
             }
         }
-
-        /* [Остальные стили остаются без изменений] */
     </style>
 </head>
 <body>
@@ -358,7 +495,50 @@
             window.location.href = `/${game}?${params.toString()}`;
         }
 
-        // [Остальные функции без изменений]
+        // Показать модальное окно пополнения
+        function showDepositModal() {
+            document.getElementById('depositModal').style.display = 'block';
+        }
+
+        // Показать модальное окно вывода
+        function showWithdrawModal() {
+            document.getElementById('withdrawModal').style.display = 'block';
+        }
+
+        // Показать модальное окно рефералов
+        function showReferralModal() {
+            alert('Реферальная система скоро будет доступна!');
+        }
+
+        // Закрыть модальное окно
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Пополнение баланса
+        function deposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            if (isNaN(amount) {
+                alert('Введите корректную сумму');
+                return;
+            }
+            
+            alert(`Пополнение на ${amount} монет успешно!`);
+            closeModal('depositModal');
+            document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
+        }
+
+        // Вывод средств
+        function withdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (isNaN(amount)) {
+                alert('Введите корректную сумму');
+                return;
+            }
+            
+            alert(`Запрос на вывод ${amount} монет отправлен!`);
+            closeModal('withdrawModal');
+        }
     </script>
 </body>
 </html>
