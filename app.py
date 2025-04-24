@@ -23,6 +23,7 @@ POSTGRES_CONFIG = {
     'user': 'user_admin',
     'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
 }
+
 # Глобальные переменные для хранения активных игр
 mines_games = {}
 
@@ -236,15 +237,40 @@ class User:
 # Маршруты для страниц
 @app.route('/')
 def home():
-    return render_template('menu.html')
+    # Получаем данные пользователя из параметров URL
+    user_data = {
+        'id': request.args.get('user_id', type=int) or 0,
+        'username': request.args.get('username', ''),
+        'first_name': request.args.get('first_name', 'Игрок')
+    }
+    return render_template('menu.html', 
+                         user_id=user_data['id'],
+                         username=user_data['username'],
+                         first_name=user_data['first_name'])
 
 @app.route('/aviator')
 def aviator():
-    return render_template('aviator.html')
+    user_data = {
+        'id': request.args.get('user_id', type=int) or 0,
+        'username': request.args.get('username', ''),
+        'first_name': request.args.get('first_name', 'Игрок')
+    }
+    return render_template('aviator.html', 
+                         user_id=user_data['id'],
+                         username=user_data['username'],
+                         first_name=user_data['first_name'])
 
 @app.route('/mines')
 def mines():
-    return render_template('mines.html')
+    user_data = {
+        'id': request.args.get('user_id', type=int) or 0,
+        'username': request.args.get('username', ''),
+        'first_name': request.args.get('first_name', 'Игрок')
+    }
+    return render_template('mines.html', 
+                         user_id=user_data['id'],
+                         username=user_data['username'],
+                         first_name=user_data['first_name'])
 
 # API для Авиатора
 @app.route('/api/aviator/init', methods=['POST'])
@@ -258,7 +284,12 @@ def aviator_init():
             'status': 'success',
             'balance': user.balance,
             'history': history,
-            'auto_cashout': user.auto_cashout
+            'auto_cashout': user.auto_cashout,
+            'user': {
+                'id': user.user_id,
+                'first_name': user.first_name,
+                'username': user.username
+            }
         })
     except Exception as e:
         logger.error(f"Aviator init error: {str(e)}")
@@ -328,9 +359,6 @@ def aviator_cashout():
     except Exception as e:
         logger.error(f"Aviator cashout error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
-
-# Остальные API методы (mines_init, mines_bet, mines_open, mines_cashout) 
-# реализуются аналогично с использованием класса User
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
