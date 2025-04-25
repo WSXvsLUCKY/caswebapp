@@ -1,617 +1,869 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Авиатор</title>
-    <style>
-        :root {
-            --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            --card-bg: rgba(30, 30, 60, 0.7);
-            --primary: #6a11cb;
-            --secondary: #2575fc;
-            --accent: #00f5ff;
-            --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
-        }
-        
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: var(--main-gradient);
-            color: white;
-            margin: 0;
-            padding: 20px;
-            height: 100vh;
-        }
-        
-        .game-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
-            position: relative;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-        
-        .back-button {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-        
-        .balance {
-            background: rgba(0, 184, 148, 0.15);
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-weight: bold;
-            border: 1px solid var(--accent);
-        }
-        
-        .game-area {
-            height: 300px;
-            background: linear-gradient(180deg, #0f3460, #1a1a2e);
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .airplane {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 60px;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300f5ff"><path d="M22 16.21v-1.895L14 8V4a2 2 0 0 0-4 0v4l-8 6.315v1.895l8-2.526V18l-2 2v2l3.5-1 3.5 1v-2l-2-2v-4.316l8 2.526z"/></svg>');
-            background-size: contain;
-            transition: all 0.5s ease;
-            filter: drop-shadow(0 0 5px rgba(0, 245, 255, 0.7));
-            z-index: 10;
-        }
-        
-        .airplane.crash {
-            animation: crash 1.5s ease-in forwards;
-            transform: translateX(-50%) rotate(180deg);
-        }
-        
-        @keyframes crash {
-            0% { bottom: calc(50% - 30px); }
-            100% { bottom: -100px; }
-        }
-        
-        .multiplier {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--accent);
-            text-shadow: var(--text-glow);
-            border: 1px solid var(--accent);
-            z-index: 10;
-        }
-        
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .bet-control {
-            display: flex;
-            gap: 10px;
-        }
-        
-        input {
-            flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        button {
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-bet {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
-        }
-        
-        .btn-bet:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(37, 117, 252, 0.7);
-        }
-        
-        .btn-cashout {
-            background: linear-gradient(to right, #00b894, #55efc4);
-            color: #000;
-            font-weight: bold;
-            box-shadow: 0 0 15px rgba(0, 184, 148, 0.5);
-        }
-        
-        .btn-auto {
-            background: linear-gradient(to right, #d63031, #ff7675);
-            color: white;
-            box-shadow: 0 0 15px rgba(214, 48, 49, 0.5);
-        }
-        
-        .history {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-        
-        .history-item {
-            min-width: 50px;
-            padding: 5px;
-            border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .win {
-            color: #55efc4;
-        }
-        
-        .lose {
-            color: #ff7675;
-        }
-        
-        .message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 25px;
-            border-radius: 10px;
-            background: #00b894;
-            color: white;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s;
-            box-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
-        }
-        
-        .show {
-            opacity: 1;
-        }
-        
-        .error {
-            background: #d63031;
-            box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
-        }
-        
-        .flight-line {
-            position: absolute;
-            width: 1px;
-            background: rgba(0, 245, 255, 0.7);
-            z-index: 1;
-            transform: translateY(-100%);
-            animation: flyDown linear;
-        }
-        
-        @keyframes flyDown {
-            0% { transform: translateY(-100%); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(300px); opacity: 0; }
-        }
-        
-        .explosion {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, rgba(255,100,100,0.8) 0%, rgba(255,50,50,0) 70%);
-            border-radius: 50%;
-            z-index: 5;
-            animation: explode 0.5s ease-out forwards;
-        }
-        
-        @keyframes explode {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(3); opacity: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="game-container">
-        <div class="header">
-            <button class="back-button" id="btn-back">← Назад</button>
-            <h1 style="margin: 0; text-shadow: var(--text-glow);">✈️ Авиатор</h1>
-            <div class="balance">💰 <span id="balance">0</span>₽</div>
-        </div>
-        
-        <div class="game-area">
-            <div class="multiplier" id="multiplier">1.00x</div>
-            <div class="airplane" id="airplane"></div>
-        </div>
-        
-        <div class="controls">
-            <div class="bet-control">
-                <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
-                <button class="btn-bet" id="btn-bet">СТАВКА</button>
-            </div>
-            <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
-            <button class="btn-auto" id="btn-auto">АВТО (2x)</button>
-        </div>
-        
-        <div class="history" id="history"></div>
-    </div>
-    
-    <div class="message" id="message"></div>
-    
-    <script>
-        // Получаем параметры из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const userData = {
-            id: urlParams.get('user_id'),
-            first_name: urlParams.get('first_name') || 'Игрок',
-            username: urlParams.get('username') || '',
-            photo_id: urlParams.get('photo_id') || ''
-        };
-        
-        let gameState = {
-            balance: 0,
-            betAmount: 10,
-            isPlaying: false,
-            multiplier: 1.0,
-            autoCashout: 0,
-            crashPoint: 0,
-            interval: null,
-            currentBet: 0,
-            flightLinesInterval: null
-        };
-        
-        const elements = {
-            balance: document.getElementById('balance'),
-            betAmount: document.getElementById('bet-amount'),
-            btnBet: document.getElementById('btn-bet'),
-            btnCashout: document.getElementById('btn-cashout'),
-            btnAuto: document.getElementById('btn-auto'),
-            multiplier: document.getElementById('multiplier'),
-            airplane: document.getElementById('airplane'),
-            history: document.getElementById('history'),
-            message: document.getElementById('message'),
-            gameArea: document.querySelector('.game-area'),
-            btnBack: document.getElementById('btn-back')
-        };
-        
-        // Инициализация игры
-        async function initGame() {
-            // Загружаем данные пользователя
-            await loadUserData();
-            
-            // Назначаем обработчики событий
-            elements.btnBet.addEventListener('click', placeBet);
-            elements.btnCashout.addEventListener('click', cashOut);
-            elements.btnAuto.addEventListener('click', toggleAutoCashout);
-            elements.betAmount.addEventListener('input', validateBet);
-            elements.btnBack.addEventListener('click', goBack);
-            
-            updateControls();
-        }
-        
-        // Загрузка данных пользователя
-        async function loadUserData() {
-            try {
-                const response = await fetch('/api/aviator/init', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user: userData
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    gameState.balance = data.balance;
-                    gameState.autoCashout = data.auto_cashout || 2.0;
-                    updateBalance();
-                    
-                    // Обновляем кнопку авто-вывода
-                    if (gameState.autoCashout > 0) {
-                        elements.btnAuto.textContent = `АВТО (${gameState.autoCashout}x)`;
-                        elements.btnAuto.classList.add('btn-cashout');
-                        elements.btnAuto.classList.remove('btn-auto');
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user data:', error);
-                showMessage('Ошибка загрузки данных', true);
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import random
+import logging
+import psycopg2
+from psycopg2 import OperationalError
+import os
+from datetime import datetime
+import requests
+import json
+import urllib.parse
+# import hmac # Для валидации initData (нужно для продакшена!)
+# import hashlib # Для валидации initData (нужно для продакшена!)
+
+app = Flask(__name__)
+CORS(app)
+
+# Конфигурация
+# !! В ПРОДАКШЕНЕ ИСПОЛЬЗУЙТЕ ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ДЛЯ КОНФИДЕНЦИАЛЬНЫХ ДАННЫХ !!
+# Например: os.environ.get('BOT_TOKEN')
+BOT_TOKEN = '7112560650:AAGGs3JMHouw2T5phdfrNZgaDZODxNHrtF0'
+POSTGRES_CONFIG = {
+    'host': 'dpg-d058p7je5dus73cm4bqg-a.oregon-postgres.render.com',
+    'port': 5432,
+    'database': 'pr_5zka',
+    'user': 'user_admin',
+    'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
+}
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def create_db_connection():
+    """Создает соединение с PostgreSQL базой данных"""
+    try:
+        connection = psycopg2.connect(**POSTGRES_CONFIG)
+        return connection
+    except OperationalError as e:
+        logger.error(f"Error connecting to PostgreSQL: {e}")
+        return None
+
+def init_db():
+    """Инициализация базы данных и таблиц"""
+    connection = create_db_connection()
+    if not connection:
+        return
+
+    try:
+        cursor = connection.cursor()
+
+        # Добавляем колонки current_bet и game_state, если их нет
+        try:
+            cursor.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS current_bet DECIMAL(15, 2) DEFAULT 0.00,
+                ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle';
+            """)
+            logger.info("Added current_bet and game_state columns to users table (if not exists)")
+        except OperationalError as e:
+             logger.error(f"Error adding columns: {e}") # Логируем, но продолжаем, если колонки уже есть
+
+
+        # Проверяем существование колонки photo_url
+        try:
+            cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='users' AND column_name='photo_url'
+            """)
+            column_exists = cursor.fetchone()
+
+            if not column_exists:
+                # Добавляем колонку если она не существует
+                cursor.execute("""
+                ALTER TABLE users ADD COLUMN photo_url VARCHAR(512)
+                """)
+                logger.info("Added photo_url column to users table")
+        except OperationalError as e:
+             logger.error(f"Error adding photo_url column: {e}")
+
+
+        # Создаем таблицу пользователей (если не существует) - с учетом новых колонок
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id BIGINT PRIMARY KEY,
+            username VARCHAR(255),
+            first_name VARCHAR(255),
+            balance DECIMAL(15, 2) DEFAULT 1000.00,
+            auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
+            photo_url VARCHAR(512),
+            current_bet DECIMAL(15, 2) DEFAULT 0.00, -- Добавлено
+            game_state VARCHAR(50) DEFAULT 'idle', -- Добавлено
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # Создаем таблицу истории игр
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS game_history (
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT,
+            game_type VARCHAR(50),
+            bet_amount DECIMAL(15, 2),
+            win_amount DECIMAL(15, 2),
+            multiplier DECIMAL(10, 2),
+            result VARCHAR(10), -- 'win' or 'lose'
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        )
+        """)
+
+        # Создаем триггер для обновления updated_at
+        cursor.execute("""
+        CREATE OR REPLACE FUNCTION update_timestamp()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.updated_at = NOW();
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        DROP TRIGGER IF EXISTS update_users_timestamp ON users;
+        CREATE TRIGGER update_users_timestamp
+        BEFORE UPDATE ON users
+        FOR EACH ROW
+        EXECUTE FUNCTION update_timestamp();
+        """)
+
+        connection.commit()
+        logger.info("Database tables initialized successfully")
+    except OperationalError as e:
+        logger.error(f"Error initializing database: {e}")
+        connection.rollback()
+    finally:
+        if connection:
+            connection.close()
+
+# Инициализация базы данных при старте
+init_db()
+
+class User:
+    def __init__(self, user_data):
+        # Преобразуем user_id к int, если он строка, но сохраняем как есть, если не числовой (хотя TG ID всегда число)
+        self.user_id = int(user_data['id']) if isinstance(user_data['id'], (str, float)) and str(user_data['id']).isdigit() else user_data['id']
+        self.username = user_data.get('username', '')
+        self.first_name = user_data.get('first_name', 'User')
+        self.photo_id = user_data.get('photo_id', '')
+
+        # Данные, которые будут загружены из БД
+        self.balance = 1000.00
+        self.auto_cashout = 2.00
+        self.current_bet = 0.00 # Теперь загружается из БД
+        self.game_state = 'idle' # Теперь загружается из БД
+        self.photo_url = ''
+
+        self.load_from_db()
+
+
+    def load_from_db(self):
+        """Загружает данные пользователя (включая current_bet и game_state) из базы данных"""
+        connection = create_db_connection()
+        if not connection:
+            return
+
+        try:
+            cursor = connection.cursor()
+            # Загружаем новые колонки current_bet и game_state
+            cursor.execute("""
+            SELECT username, first_name, balance, auto_cashout, photo_url, current_bet, game_state
+            FROM users WHERE user_id = %s
+            """, (self.user_id,))
+            user = cursor.fetchone()
+
+            if not user:
+                logger.info(f"User {self.user_id} not found in DB, creating new.")
+                # Создаем нового пользователя
+                if self.photo_id:
+                    self.photo_url = self.get_telegram_photo_url()
+
+                cursor.execute("""
+                INSERT INTO users (user_id, username, first_name, balance, auto_cashout, photo_url, current_bet, game_state)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (self.user_id, self.username, self.first_name, self.balance, self.auto_cashout, self.photo_url, self.current_bet, self.game_state))
+                connection.commit()
+            else:
+                logger.info(f"User {self.user_id} found in DB, loading data.")
+                self.username = user[0] or self.username
+                self.first_name = user[1] or self.first_name
+                self.balance = float(user[2])
+                self.auto_cashout = float(user[3])
+                self.photo_url = user[4] or ''
+                self.current_bet = float(user[5]) # Загружено из БД
+                self.game_state = user[6] or 'idle' # Загружено из БД
+
+                # Обновляем фото, если оно изменилось или отсутствует
+                if self.photo_id and (not self.photo_url or 'avatar.png' in self.photo_url):
+                     logger.info(f"Updating photo for user {self.user_id}")
+                     self.photo_url = self.get_telegram_photo_url()
+                     if self.photo_url:
+                         # Используем отдельное соединение для этого обновления, если не хотим включать в основную транзакцию загрузки
+                         update_conn = create_db_connection()
+                         if update_conn:
+                             try:
+                                self.update_photo_url(update_conn)
+                                update_conn.commit()
+                             except Exception as e:
+                                 logger.error(f"Failed to commit photo URL update for user {self.user_id}: {e}")
+                                 update_conn.rollback()
+                             finally:
+                                 update_conn.close()
+
+
+        except OperationalError as e:
+            logger.error(f"Error loading or creating user {self.user_id} from DB: {e}")
+            if connection:
+                connection.rollback() # Откатываем, если была ошибка при вставке
+        finally:
+            if connection:
+                connection.close()
+
+    def save_game_state(self, connection):
+        """Сохраняет состояние игры пользователя (баланс, текущая ставка, состояние игры) в базу данных."""
+        if not connection:
+             logger.error(f"Cannot save state for user {self.user_id}: No DB connection.")
+             raise OperationalError("No database connection") # Вызываем исключение для обработки ошибки выше
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+                UPDATE users
+                SET balance = %s, current_bet = %s, game_state = %s, updated_at = NOW()
+                WHERE user_id = %s
+            """, (self.balance, self.current_bet, self.game_state, self.user_id))
+            # connection.commit() или rollback() должен быть вызван вызывающей функцией
+            logger.info(f"Saved state for user {self.user_id}: balance={self.balance}, bet={self.current_bet}, state={self.game_state}")
+
+        except Exception as e:
+            logger.error(f"Error saving user game state for user {self.user_id}: {e}")
+            raise # Перевызываем исключение, чтобы вызывающая функция могла откатить транзакцию
+
+    def get_telegram_photo_url(self):
+        """Получает URL фото профиля из Telegram"""
+        # Убедитесь, что photo_id здесь - это file_id фото профиля, а не просто флаг
+        if not self.photo_id or str(self.photo_id) == 'None' or str(self.photo_id) == '': # Проверка на пустой или строковое 'None'
+             return ''
+
+        try:
+            # Получаем информацию о файле
+            # ! Валидация response.json() здесь важна !
+            file_info_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={self.photo_id}"
+            response = requests.get(file_info_url, timeout=5) # Добавлен таймаут
+            response.raise_for_status() # Вызовет исключение для кодов ошибок HTTP
+            result = response.json()
+
+            if result.get('ok') and result.get('result'):
+                 file_path = result['result'].get('file_path')
+                 if file_path:
+                     photo_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                     logger.info(f"Got Telegram photo URL for {self.user_id}: {photo_url}")
+                     return photo_url
+                 else:
+                     logger.warning(f"file_path not found in Telegram getFile response for {self.user_id}")
+            else:
+                 logger.warning(f"Telegram getFile response not OK for {self.user_id}: {result.get('description', 'No description')}")
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"HTTP request error getting Telegram photo URL for {self.user_id}: {e}")
+        except Exception as e:
+            logger.error(f"Error processing Telegram photo URL for {self.user_id}: {e}")
+
+        return ''
+
+    def update_photo_url(self, connection):
+        """Обновляет URL фото в базе данных"""
+        if not self.photo_url or not connection:
+            return
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users
+            SET photo_url = %s
+            WHERE user_id = %s
+            """, (self.photo_url, self.user_id))
+            # connection.commit() или rollback() должен быть вызван вызывающей функцией
+            logger.info(f"Updated photo URL for user {self.user_id} in DB.")
+
+        except Exception as e:
+            logger.error(f"Error updating photo URL for user {self.user_id} in DB: {e}")
+            raise # Перевызываем исключение
+
+    def update_balance(self, amount, connection):
+        """Обновляет баланс пользователя в базе данных. Использовать save_game_state предпочтительнее для транзакций."""
+        # Этот метод оставлен для примера, но для атомарности лучше использовать save_game_state
+        if not connection:
+             logger.error(f"Cannot update balance for user {self.user_id}: No DB connection.")
+             return False
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users
+            SET balance = balance + %s
+            WHERE user_id = %s
+            RETURNING balance
+            """, (amount, self.user_id))
+
+            new_balance = cursor.fetchone() # Получаем результат
+
+            if new_balance:
+                 self.balance = float(new_balance[0])
+                 # connection.commit() или rollback() должен быть вызван вызывающей функцией
+                 logger.info(f"Updated balance for user {self.user_id}. New balance: {self.balance}")
+                 return True
+            else:
+                 logger.error(f"Update balance failed for user {self.user_id}: User not found?")
+                 return False
+
+        except Exception as e:
+            logger.error(f"Error updating balance for user {self.user_id}: {e}")
+            raise # Перевызываем исключение
+
+    def add_to_history(self, game_data, connection):
+        """Добавляет запись в историю игр."""
+        if not connection:
+             logger.error(f"Cannot add history for user {self.user_id}: No DB connection.")
+             raise OperationalError("No database connection")
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            INSERT INTO game_history
+            (user_id, game_type, bet_amount, win_amount, multiplier, result)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                self.user_id,
+                game_data.get('game', 'unknown'),
+                game_data.get('bet_amount', 0.0),
+                game_data.get('win_amount', 0.0),
+                game_data.get('multiplier', 1.0),
+                game_data.get('result', 'lose') # По умолчанию 'lose' если не указан win
+            ))
+            # connection.commit() или rollback() должен быть вызван вызывающей функцией
+            logger.info(f"Added history for user {self.user_id}. Game: {game_data.get('game')}, Result: {game_data.get('result')}, Bet: {game_data.get('bet_amount')}, Win: {game_data.get('win_amount')}")
+
+        except Exception as e:
+            logger.error(f"Error adding history for user {self.user_id}: {e}")
+            raise # Перевызываем исключение
+
+    def get_history(self, limit=10):
+        """Получает историю игр пользователя"""
+        connection = create_db_connection()
+        if not connection:
+            return []
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            SELECT game_type, bet_amount, win_amount, multiplier, result
+            FROM game_history
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """, (self.user_id, limit))
+
+            history = []
+            for record in cursor.fetchall():
+                history.append({
+                    'game': record[0],
+                    'bet_amount': float(record[1]),
+                    'win_amount': float(record[2]),
+                    'multiplier': float(record[3]),
+                    'result': record[4]
+                })
+            logger.info(f"Fetched history for user {self.user_id}. Found {len(history)} records.")
+            return history
+        except OperationalError as e:
+            logger.error(f"Error getting history for user {self.user_id}: {e}")
+            return []
+        finally:
+            if connection:
+                connection.close()
+
+# --- Маршруты ---
+
+# Маршрут для главной страницы (меню)
+@app.route('/')
+def home():
+    # В идеале, здесь вы должны получить user_id из валидированных initData Telegram
+    # Но в этом примере мы пока полагаемся на user_id из URL параметров,
+    # как это было в вашем коде, но это НЕБЕЗОПАСНО и не гарантирует реальный ID
+    user_id = request.args.get('user_id', type=int) # Получаем как int
+    username = request.args.get('username', '')
+    first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
+
+    # Если user_id не был передан или равен 0, это проблема инициализации Mini App
+    if not user_id or user_id == 0:
+         logger.warning(f"User ID is missing or 0 in the initial request URL. Got: {user_id}")
+         # Можно вернуть страницу с ошибкой или предложить запустить из Telegram
+         user_id = 0 # Продолжаем с 0 для совместимости, но это источник проблемы
+
+    # Создаем объект User для загрузки данных из БД (или создания нового)
+    # Передаем данные, которые получили (надеясь, что ID реальный)
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
+    user = User(temp_user_data) # Загружает или создает пользователя в БД
+
+    # Получаем URL фото из объекта пользователя (теперь он загружен из БД или получен от TG)
+    photo_url = user.photo_url
+
+    logger.info(f"Rendering home page for user ID: {user.user_id}")
+    return render_template('menu.html',
+                           user_id=user.user_id, # Передаем user_id из объекта User (загружен из БД или 0)
+                           username=user.username,
+                           first_name=user.first_name,
+                           photo_url=photo_url)
+
+# Маршруты для страниц игр (аналогично home)
+@app.route('/aviator')
+def aviator():
+    user_id = request.args.get('user_id', type=int)
+    username = request.args.get('username', '')
+    first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
+
+    if not user_id or user_id == 0:
+         logger.warning(f"User ID is missing or 0 in the aviator page URL. Got: {user_id}")
+         user_id = 0
+
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
+    user = User(temp_user_data) # Загружает или создает пользователя в БД
+
+    photo_url = user.photo_url
+
+    logger.info(f"Rendering aviator page for user ID: {user.user_id}")
+    return render_template('aviator.html',
+                           user_id=user.user_id, # Передаем user_id из объекта User
+                           username=user.username,
+                           first_name=user.first_name,
+                           photo_url=photo_url)
+
+@app.route('/mines')
+def mines():
+    user_id = request.args.get('user_id', type=int)
+    username = request.args.get('username', '')
+    first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
+
+    if not user_id or user_id == 0:
+         logger.warning(f"User ID is missing or 0 in the mines page URL. Got: {user_id}")
+         user_id = 0
+
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
+    user = User(temp_user_data) # Загружает или создает пользователя в БД
+
+    photo_url = user.photo_url
+
+    logger.info(f"Rendering mines page for user ID: {user.user_id}")
+    return render_template('mines.html',
+                           user_id=user.user_id,
+                           username=user.username,
+                           first_name=user.first_name,
+                           photo_url=photo_url)
+
+# API для работы с пользователем (фронтенд запрашивает свои данные)
+@app.route('/api/user', methods=['POST'])
+def get_user():
+    try:
+        data = request.get_json()
+        # Здесь user_id приходит из userData фронтенда
+        user_id_from_frontend = data.get('user', {}).get('id')
+        if not user_id_from_frontend or (isinstance(user_id_from_frontend, (int, float)) and user_id_from_frontend == 0):
+             logger.error(f"API /api/user: Invalid or missing user ID in request data: {user_id_from_frontend}.")
+             return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+        user = User({'id': user_id_from_frontend}) # Загружаем данные пользователя по ID из запроса
+        logger.info(f"API /api/user: Request for user ID: {user.user_id}")
+
+        return jsonify({
+            'status': 'success',
+            'user': {
+                'id': user.user_id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'balance': user.balance,
+                'auto_cashout': user.auto_cashout,
+                'photo_url': user.photo_url
             }
-        }
-        
-        // Размещение ставки
-        async function placeBet() {
-            if (gameState.isPlaying) {
-                showMessage('Завершите текущую игру!', true);
-                return;
+        })
+    except Exception as e:
+        logger.error(f"API /api/user error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+
+# API для получения фото (если нужно получать отдельно)
+@app.route('/api/user/photo', methods=['GET'])
+def get_user_photo():
+    photo_id = request.args.get('photo_id')
+    if not photo_id:
+        return jsonify({'status': 'error', 'message': 'No photo ID provided'}), 400
+
+    # Можно создать временный объект User или просто вызвать функцию get_telegram_photo_url
+    # Для простоты вызовем функцию напрямую
+    # Передаем фиктивный user_id=0, так как для получения фото он не нужен
+    temp_user = User({'id': 0, 'photo_id': photo_id, 'first_name': 'temp', 'username': 'temp'})
+    photo_url = temp_user.get_telegram_photo_url()
+
+    if photo_url:
+         logger.info(f"API /api/user/photo: Returning photo URL for photo_id: {photo_id}")
+         return jsonify({
+             'status': 'success',
+             'photo_url': photo_url
+         })
+    else:
+         logger.warning(f"API /api/user/photo: Could not get photo URL for photo_id: {photo_id}")
+         return jsonify({'status': 'error', 'message': 'Failed to get photo URL from Telegram'}), 500
+
+
+@app.route('/api/user/update_balance', methods=['POST'])
+def update_user_balance():
+    connection = create_db_connection()
+    if not connection:
+         logger.error("API /api/user/update_balance: Database connection error.")
+         return jsonify({'status': 'error', 'message': 'Database connection error'}), 500
+    connection.autocommit = False # Начинаем транзакцию
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        amount = float(data.get('amount', 0))
+
+        if user_id is None or (isinstance(user_id, (int, float)) and user_id == 0):
+             logger.error(f"API /api/user/update_balance: Invalid or missing user ID: {user_id}.")
+             connection.rollback()
+             return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+        # Создаем объект User, чтобы загрузить текущий баланс
+        user = User({'id': user_id, 'first_name': 'temp', 'username': 'temp'}) # temp names are fine as we only update balance
+        logger.info(f"API /api/user/update_balance: User {user.user_id}, amount: {amount}. Current balance: {user.balance}")
+
+        # Обновляем баланс в объекте и сохраняем в БД
+        user.balance += amount
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE users
+            SET balance = %s, updated_at = NOW()
+            WHERE user_id = %s
+        """, (user.balance, user.user_id))
+        # В этом случае достаточно просто обновить баланс, без game_state/current_bet
+        # user.save_game_state(connection) # Можно использовать и этот метод, но он обновляет все 3 поля
+
+        connection.commit() # Подтверждаем транзакцию
+
+        logger.info(f"API /api/user/update_balance: User {user.user_id}. New balance: {user.balance}")
+        return jsonify({
+            'status': 'success',
+            'new_balance': user.balance
+        })
+
+    except Exception as e:
+        user_id_for_log = data.get('user_id', 'N/A')
+        logger.error(f"API /api/user/update_balance error for user {user_id_for_log}: {str(e)}")
+        if connection:
+             connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+# API для Авиатора: Инициализация (получение баланса, истории, авто-вывода, состояния)
+@app.route('/api/aviator/init', methods=['POST'])
+def aviator_init():
+    connection = create_db_connection() # Нужен коннект для возможного сохранения состояния
+    if not connection:
+        logger.error("API /api/aviator/init: Database connection error.")
+        return jsonify({'status': 'error', 'message': 'Database connection error'}), 500
+    connection.autocommit = False # Начинаем транзакцию
+
+    try:
+        data = request.get_json()
+        # Здесь user_id приходит из userData фронтенда
+        user_id_from_frontend = data.get('user', {}).get('id')
+        if not user_id_from_frontend or (isinstance(user_id_from_frontend, (int, float)) and user_id_from_frontend == 0):
+             logger.error(f"API /api/aviator/init: Invalid or missing user ID in request data: {user_id_from_frontend}.")
+             connection.rollback()
+             return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+        user = User({'id': user_id_from_frontend}) # Загружает состояние из БД
+        logger.info(f"API /api/aviator/init: Request for user ID: {user.user_id}. Current state loaded: {user.game_state}")
+
+        # --- НОВАЯ ЛОГИКА: Сброс состояния, если оно завершилось ---
+        # Если пользователь находится в конечном состоянии ('cashed_out' или 'crashed'),
+        # сбрасываем его в 'idle', чтобы он мог сделать новую ставку.
+        if user.game_state in ['cashed_out', 'crashed']:
+             logger.info(f"API /api/aviator/init: Resetting state for user {user.user_id} from {user.game_state} to idle.")
+             user.game_state = 'idle'
+             user.current_bet = 0.00 # Убеждаемся, что ставка 0, когда состояние idle
+             user.save_game_state(connection) # Сохраняем сброшенное состояние в БД
+        # --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+        history = user.get_history() # Загружаем историю пользователя (можно и после сброса)
+
+        connection.commit() # Подтверждаем транзакцию (даже если состояние не менялось)
+
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance,
+            'history': history,
+            'auto_cashout': user.auto_cashout,
+            'current_bet': user.current_bet, # Возвращаем текущую ставку (должна быть 0 после сброса)
+            'game_state': user.game_state, # Возвращаем текущее состояние (должно быть 'idle' после сброса)
+            # Можно вернуть больше данных пользователя, если нужно на фронтенде Авиатора
+            'user': {
+                'id': user.user_id,
+                'first_name': user.first_name,
+                'username': user.username,
+                'photo_url': user.photo_url
             }
-            
-            const betAmount = parseInt(elements.betAmount.value);
-            
-            if (isNaN(betAmount) || betAmount < 10) {
-                showMessage('Минимальная ставка 10₽', true);
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/aviator/bet', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user: userData,
-                        bet_amount: betAmount
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    gameState.currentBet = betAmount;
-                    gameState.balance = data.balance;
-                    gameState.isPlaying = true;
-                    gameState.crashPoint = data.crash_point;
-                    
-                    updateBalance();
-                    updateControls();
-                    startGame();
-                } else {
-                    showMessage(data.message || 'Ошибка при размещении ставки', true);
-                }
-            } catch (error) {
-                console.error('Error placing bet:', error);
-                showMessage('Ошибка соединения', true);
-            }
+        })
+    except Exception as e:
+        user_id_for_log = data.get('user', {}).get('id', 'N/A')
+        logger.error(f"API /api/aviator/init error for user {user_id_for_log}: {str(e)}")
+        if connection:
+             connection.rollback() # Откатываем транзакцию при ошибке
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+
+# API для Авиатора: Размещение ставки
+@app.route('/api/aviator/bet', methods=['POST'])
+def aviator_bet():
+    connection = create_db_connection()
+    if not connection:
+        logger.error("API /api/aviator/bet: Database connection error.")
+        return jsonify({'status': 'error', 'message': 'Database connection error'}), 500
+    connection.autocommit = False # Начинаем транзакцию
+
+    try:
+        data = request.get_json()
+        # Здесь user_id приходит из userData фронтенда
+        user_id_from_frontend = data.get('user', {}).get('id')
+        bet_amount = float(data.get('bet_amount', 0))
+
+        if not user_id_from_frontend or (isinstance(user_id_from_frontend, (int, float)) and user_id_from_frontend == 0):
+             logger.error(f"API /api/aviator/bet: Invalid or missing user ID in request data: {user_id_from_frontend}.")
+             connection.rollback()
+             return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+        user = User({'id': user_id_from_frontend}) # Загружаем данные пользователя по ID из запроса
+        logger.info(f"API /api/aviator/bet: Request for user ID: {user.user_id}, bet: {bet_amount}. Current state loaded: {user.game_state}, current bet: {user.current_bet}")
+
+
+        # Проверка состояния игры пользователя: должен быть 'idle'
+        if user.game_state != 'idle':
+            logger.warning(f"API /api/aviator/bet: User {user.user_id} tried to bet while state is {user.game_state}")
+            connection.rollback()
+            return jsonify({'status': 'error', 'message': f'Game in progress. Current state: {user.game_state}'}), 400
+
+        # Валидация ставки
+        if bet_amount < 10:
+            logger.warning(f"API /api/aviator/bet: User {user.user_id} tried to bet less than minimum ({bet_amount})")
+            connection.rollback()
+            return jsonify({'status': 'error', 'message': 'Минимальная ставка 10₽'}), 400
+
+        if user.balance < bet_amount:
+            logger.warning(f"API /api/aviator/bet: User {user.user_id} not enough balance ({user.balance}) for bet ({bet_amount})")
+            connection.rollback()
+            return jsonify({'status': 'error', 'message': 'Недостаточно средств'}), 400
+
+        # Обновляем состояние пользователя в объекте
+        user.balance -= bet_amount # Списываем ставку из баланса в объекте
+        user.current_bet = bet_amount # Устанавливаем текущую ставку в объекте
+        user.game_state = 'bet_placed' # Устанавливаем состояние игры в объекте
+
+        # Сохраняем обновленное состояние в базу данных в рамках транзакции
+        user.save_game_state(connection)
+
+        # Генерируем crash_point (это упрощение, в реальной игре он должен быть один на раунд для всех)
+        # и должен быть сохранен где-то для раунда.
+        crash_point = round(random.uniform(1.1, 10.0), 2)
+        # В более сложной реализации здесь нужно было бы сохранить crash_point для раунда
+
+        connection.commit() # Подтверждаем транзакцию
+
+        logger.info(f"API /api/aviator/bet: User {user.user_id} placed bet {bet_amount}. New balance: {user.balance}. State: {user.game_state}. Crash point: {crash_point}")
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance, # Возвращаем обновленный баланс
+            'crash_point': crash_point, # В упрощенном варианте, генерируем и отдаем фронтенду
+            'game_state': user.game_state # Возвращаем новое состояние
+        })
+
+    except Exception as e:
+        user_id_for_log = data.get('user', {}).get('id', 'N/A')
+        logger.error(f"API /api/aviator/bet error for user {user_id_for_log}: {str(e)}")
+        if connection:
+             connection.rollback() # Откатываем транзакцию при ошибке
+        return jsonify({'status': 'error', 'message': 'Внутренняя ошибка сервера при ставке'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+# API для Авиатора: Забрать выигрыш (Cashout)
+@app.route('/api/aviator/cashout', methods=['POST'])
+def aviator_cashout():
+    connection = create_db_connection()
+    if not connection:
+        logger.error("API /api/aviator/cashout: Database connection error.")
+        return jsonify({'status': 'error', 'message': 'Database connection error'}), 500
+    connection.autocommit = False # Начинаем транзакцию
+
+    try:
+        data = request.get_json()
+        # Здесь user_id приходит из userData фронтенда
+        user_id_from_frontend = data.get('user', {}).get('id')
+        multiplier = float(data.get('multiplier', 1.0))
+        auto = data.get('auto', False)
+
+        if not user_id_from_frontend or (isinstance(user_id_from_frontend, (int, float)) and user_id_from_frontend == 0):
+             logger.error(f"API /api/aviator/cashout: Invalid or missing user ID in request data: {user_id_from_frontend}.")
+             connection.rollback()
+             return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+        user = User({'id': user_id_from_frontend}) # Загружаем данные пользователя по ID из запроса
+        logger.info(f"API /api/aviator/cashout: Request for user ID: {user.user_id}, multiplier: {multiplier}, auto: {auto}. Current state loaded: {user.game_state}, current bet: {user.current_bet}")
+
+        # ** Главная проверка, которая теперь использует состояние из БД **
+        # Проверяем, что состояние игры 'bet_placed' и текущая ставка > 0
+        if user.game_state != 'bet_placed' or user.current_bet <= 0:
+            logger.warning(f"API /api/aviator/cashout: User {user.user_id} has no active bet (state: {user.game_state}, bet: {user.current_bet})")
+            connection.rollback()
+            return jsonify({'status': 'error', 'message': 'Нет активной ставки'}), 400 # Это сообщение вернется фронтенду
+
+        # Расчет выигрыша
+        # Используем current_bet, загруженный из базы данных
+        original_bet = float(user.current_bet) # Сохраняем ставку до обнуления
+        win_amount = int(original_bet * multiplier) # Округляем до целого рубля
+
+        # Обновляем состояние пользователя в объекте
+        user.balance += win_amount # Добавляем выигрыш к балансу в объекте
+        user.current_bet = 0.00 # Сбрасываем текущую ставку в объекте
+        user.game_state = 'cashed_out' # Устанавливаем состояние игры в объекте
+
+        # Сохраняем обновленное состояние в базу данных в рамках транзакции
+        user.save_game_state(connection)
+
+        # Добавляем запись в историю игры в рамках той же транзакции
+        history_data = {
+            'game': 'aviator',
+            'bet_amount': original_bet, # Ставка, которая была сделана
+            'win_amount': win_amount,
+            'multiplier': multiplier,
+            'result': 'win'
         }
-        
-        // Забрать выигрыш
-        async function cashOut() {
-            if (!gameState.isPlaying) return;
-            
-            try {
-                const response = await fetch('/api/aviator/cashout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user: userData,
-                        multiplier: gameState.multiplier,
-                        auto: gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    gameState.balance = data.balance;
-                    const profit = Math.floor(gameState.currentBet * gameState.multiplier) - gameState.currentBet;
-                    showMessage(`Вы выиграли ${profit}₽`);
-                    endGame(true);
-                } else {
-                    showMessage(data.message || 'Ошибка при выводе средств', true);
-                }
-            } catch (error) {
-                console.error('Error cashing out:', error);
-                showMessage('Ошибка соединения', true);
-            }
-        }
-        
-        // Настройка авто-вывода
-        function toggleAutoCashout() {
-            if (gameState.autoCashout === 0) {
-                gameState.autoCashout = 2.0;
-                elements.btnAuto.textContent = `АВТО (${gameState.autoCashout}x)`;
-                elements.btnAuto.classList.add('btn-cashout');
-                elements.btnAuto.classList.remove('btn-auto');
-                showMessage(`Авто-вывод установлен на ${gameState.autoCashout}x`);
-            } else {
-                gameState.autoCashout = 0;
-                elements.btnAuto.textContent = 'АВТО (2x)';
-                elements.btnAuto.classList.add('btn-auto');
-                elements.btnAuto.classList.remove('btn-cashout');
-                showMessage('Авто-вывод отключен');
-            }
-        }
-        
-        // Создание эффекта взлета (вертикальные линии)
-        function createFlightLines() {
-            clearFlightLines();
-            
-            gameState.flightLinesInterval = setInterval(() => {
-                const lineCount = Math.floor(Math.random() * 6) + 3;
-                
-                for (let i = 0; i < lineCount; i++) {
-                    const line = document.createElement('div');
-                    line.className = 'flight-line';
-                    line.style.height = `${Math.floor(Math.random() * 30) + 10}px`;
-                    line.style.left = `${Math.floor(Math.random() * elements.gameArea.offsetWidth)}px`;
-                    line.style.animationDuration = `${(Math.random() * 0.7) + 0.3}s`;
-                    
-                    elements.gameArea.appendChild(line);
-                    
-                    setTimeout(() => {
-                        if (line.parentNode) {
-                            line.parentNode.removeChild(line);
-                        }
-                    }, parseFloat(line.style.animationDuration) * 1000);
-                }
-            }, 100);
-        }
-        
-        // Очистка эффекта взлета
-        function clearFlightLines() {
-            clearInterval(gameState.flightLinesInterval);
-            document.querySelectorAll('.flight-line').forEach(line => {
-                if (line.parentNode) line.parentNode.removeChild(line);
-            });
-        }
-        
-        // Создание эффекта взрыва
-        function createExplosion() {
-            const explosion = document.createElement('div');
-            explosion.className = 'explosion';
-            explosion.style.left = `${elements.airplane.offsetLeft - 20}px`;
-            explosion.style.top = `${elements.airplane.offsetTop - 20}px`;
-            elements.gameArea.appendChild(explosion);
-            
-            setTimeout(() => {
-                if (explosion.parentNode) explosion.parentNode.removeChild(explosion);
-            }, 500);
-        }
-        
-        // Начало игры
-        function startGame() {
-            gameState.multiplier = 1.0;
-            elements.multiplier.textContent = '1.00x';
-            elements.airplane.style.bottom = '50px';
-            elements.airplane.classList.remove('crash');
-            
-            setTimeout(() => {
-                elements.airplane.style.bottom = 'calc(50% - 30px)';
-                createFlightLines();
-                
-                gameState.interval = setInterval(() => {
-                    gameState.multiplier = parseFloat((gameState.multiplier + 0.01).toFixed(2));
-                    elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
-                    
-                    if (gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout) {
-                        cashOut();
-                    }
-                    
-                    if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
-                        createExplosion();
-                        elements.airplane.classList.add('crash');
-                        
-                        setTimeout(() => {
-                            endGame(false);
-                            showMessage(`Самолет разбился! x${gameState.crashPoint}`, true);
-                        }, 500);
-                    }
-                }, 50);
-            }, 1000);
-        }
-        
-        // Окончание игры
-        function endGame(win) {
-            clearInterval(gameState.interval);
-            clearFlightLines();
-            gameState.isPlaying = false;
-            
-            if (!win) {
-                showMessage(`Вы проиграли ${gameState.currentBet}₽`, true);
-            }
-            
-            updateBalance();
-            updateControls();
-            addToHistory(gameState.multiplier, win);
-        }
-        
-        // Валидация ставки
-        function validateBet() {
-            const value = parseInt(elements.betAmount.value);
-            
-            if (isNaN(value)) {
-                elements.betAmount.value = '';
-                return;
-            }
-            
-            if (value < 10) {
-                elements.betAmount.value = 10;
-                return;
-            }
-            
-            if (value > gameState.balance) {
-                elements.betAmount.value = gameState.balance;
-            }
-        }
-        
-        // Обновление баланса
-        function updateBalance() {
-            elements.balance.textContent = gameState.balance;
-        }
-        
-        // Обновление элементов управления
-        function updateControls() {
-            elements.btnBet.disabled = gameState.isPlaying;
-            elements.btnCashout.disabled = !gameState.isPlaying;
-            elements.betAmount.disabled = gameState.isPlaying;
-        }
-        
-        // Добавление в историю
-        function addToHistory(multiplier, win) {
-            const div = document.createElement('div');
-            div.className = `history-item ${win ? 'win' : 'lose'}`;
-            div.textContent = `${multiplier.toFixed(2)}x`;
-            elements.history.prepend(div);
-            
-            if (elements.history.children.length > 10) {
-                elements.history.removeChild(elements.history.lastChild);
-            }
-        }
-        
-        // Показать сообщение
-        function showMessage(text, isError = false) {
-            elements.message.textContent = text;
-            elements.message.className = 'message';
-            if (isError) elements.message.classList.add('error');
-            elements.message.classList.add('show');
-            
-            setTimeout(() => {
-                elements.message.classList.remove('show');
-            }, 3000);
-        }
-        
-        // Возврат на главную страницу
-        function goBack() {
-            const params = new URLSearchParams();
-            params.append('user_id', userData.id);
-            if (userData.first_name) params.append('first_name', userData.first_name);
-            if (userData.username) params.append('username', userData.username);
-            if (userData.photo_id) params.append('photo_id', userData.photo_id);
-            
-            window.location.href = `/?${params.toString()}`;
-        }
-        
-        // Инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', initGame);
-    </script>
-</body>
-</html>
+        user.add_to_history(history_data, connection)
+
+        connection.commit() # Подтверждаем транзакцию
+
+        profit = win_amount - original_bet
+        logger.info(f"API /api/aviator/cashout: User {user.user_id} cashed out at {multiplier}x. Win: {win_amount}. Profit: {profit}. New balance: {user.balance}. State: {user.game_state}")
+
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance, # Возвращаем обновленный баланс
+            'profit': profit, # Возвращаем прибыль
+            'multiplier': multiplier,
+            'auto': auto, # Возвращаем флаг авто-вывода, если нужен на фронтенде
+            'game_state': user.game_state # Возвращаем новое состояние
+        })
+
+    except Exception as e:
+        user_id_for_log = data.get('user', {}).get('id', 'N/A')
+        logger.error(f"API /api/aviator/cashout error for user {user_id_for_log}: {str(e)}")
+        if connection:
+             connection.rollback() # Откатываем транзакцию при ошибке
+        # Если произошла ошибка, но ставка была активной, возможно, нужно попытаться вернуть ставку?
+        # Это зависит от желаемой логики обработки ошибок.
+        return jsonify({'status': 'error', 'message': 'Внутренняя ошибка сервера при выводе средств'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+# API для обработки крушения (серверная логика, которая должна вызываться, когда самолет разбивается)
+# ЭТО УПРОЩЕННЫЙ МАРШРУТ! В реальной игре нужна система раундов и таймеров.
+# Фронтенд может вызвать этот маршрут, когда видит, что множитель достиг crash_point.
+@app.route('/api/aviator/crash', methods=['POST'])
+def aviator_crash():
+     connection = create_db_connection()
+     if not connection:
+         logger.error("API /api/aviator/crash: Database connection error.")
+         return jsonify({'status': 'error', 'message': 'Database connection error'}), 500
+     connection.autocommit = False # Начинаем транзакцию
+
+     try:
+         data = request.get_json()
+         # Здесь user_id приходит из userData фронтенда, но в реальной системе крушение обрабатывается сервером для всех
+         user_id_from_frontend = data.get('user', {}).get('id')
+         crash_multiplier = float(data.get('multiplier', 1.0)) # Фронтенд может сообщить, где разбилось
+
+         if not user_id_from_frontend or (isinstance(user_id_from_frontend, (int, float)) and user_id_from_frontend == 0):
+              logger.error(f"API /api/aviator/crash: Invalid or missing user ID in request data: {user_id_from_frontend}.")
+              connection.rollback()
+              return jsonify({'status': 'error', 'message': 'Invalid or missing user ID'}), 400
+
+         user = User({'id': user_id_from_frontend}) # Загружаем данные пользователя
+         logger.info(f"API /api/aviator/crash: Handling crash for user ID: {user.user_id} at {crash_multiplier}x. Current state: {user.game_state}, current bet: {user.current_bet}")
+
+
+         # Проверяем, была ли активная ставка и не успел ли пользователь вывести
+         # Состояние должно быть 'bet_placed' И current_bet > 0
+         if user.game_state == 'bet_placed' and user.current_bet > 0:
+              # Пользователь проиграл
+              original_bet = float(user.current_bet) # Сохраняем перед обнулением
+              user.current_bet = 0.00 # Обнуляем текущую ставку в объекте
+              user.game_state = 'crashed' # Устанавливаем состояние игры в объекте
+
+              # Сохраняем обновленное состояние в базу данных
+              user.save_game_state(connection)
+
+              # Добавляем запись о проигрыше в историю
+              history_data = {
+                  'game': 'aviator',
+                  'bet_amount': original_bet, # Ставка, которая проиграла
+                  'win_amount': 0.00, # Выигрыш 0
+                  'multiplier': crash_multiplier, # Множитель, на котором произошло крушение
+                  'result': 'lose'
+              }
+              user.add_to_history(history_data, connection)
+
+              connection.commit() # Подтверждаем транзакцию
+
+              logger.info(f"API /api/aviator/crash: User {user.user_id} lost bet {original_bet} at {crash_multiplier}x. New balance: {user.balance}. State: {user.game_state}")
+              return jsonify({
+                  'status': 'success',
+                  'message': 'Bet lost',
+                  'balance': user.balance, # Возвращаем текущий баланс (уже без ставки)
+                  'lost_amount': original_bet,
+                  'game_state': user.game_state # Возвращаем новое состояние
+              })
+         else:
+              # Ставки не было, или пользователь уже вывел, или состояние некорректное. Ничего не делаем.
+              logger.info(f"API /api/aviator/crash: User {user.user_id} had no active bet or already cashed out. State: {user.game_state}, bet: {user.current_bet}")
+              connection.rollback() # Откатываем, так как ничего не меняли
+              # Возвращаем 200 OK, так как это не ошибка с точки зрения запроса, просто нет активной ставки для проигрыша
+              return jsonify({'status': 'success', 'message': 'No active bet to lose or already processed'}), 200
+
+     except Exception as e:
+         user_id_for_log = data.get('user', {}).get('id', 'N/A')
+         logger.error(f"API /api/aviator/crash error for user {user_id_for_log}: {str(e)}")
+         if connection:
+              connection.rollback() # Откатываем транзакцию при ошибке
+         return jsonify({'status': 'error', 'message': 'Внутренняя ошибка сервера при обработке крушения'}), 500
+     finally:
+         if connection:
+             connection.close()
+
+
+if __name__ == '__main__':
+    # Для локальной разработки
+    # В продакшене на Render может потребоваться запуск через Gunicorn или другой WSGI сервер
+    logger.info("Starting Flask app...")
+    # Получаем порт из переменной окружения RENDER или используем 5000 по умолчанию
+    port = int(os.environ.get('PORT', 5000))
+    # debug=True только для разработки. Отключите в продакшене!
+    app.run(host='0.0.0.0', port=port, debug=True)
