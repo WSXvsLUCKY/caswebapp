@@ -32,12 +32,25 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+            position: relative;
         }
         
         .header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
         }
         
         .balance {
@@ -199,7 +212,6 @@
             box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
         }
         
-        /* Стили для эффекта взлета (вертикальные линии) */
         .flight-line {
             position: absolute;
             width: 1px;
@@ -216,7 +228,6 @@
             100% { transform: translateY(300px); opacity: 0; }
         }
         
-        /* Эффект взрыва */
         .explosion {
             position: absolute;
             width: 100px;
@@ -236,8 +247,9 @@
 <body>
     <div class="game-container">
         <div class="header">
+            <button class="back-button" id="btn-back">← Назад</button>
             <h1 style="margin: 0; text-shadow: var(--text-glow);">✈️ Авиатор</h1>
-            <div class="balance">💰 <span id="balance">100</span>₽</div>
+            <div class="balance">💰 <span id="balance">0</span>₽</div>
         </div>
         
         <div class="game-area">
@@ -247,7 +259,7 @@
         
         <div class="controls">
             <div class="bet-control">
-                <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки">
+                <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
                 <button class="btn-bet" id="btn-bet">СТАВКА</button>
             </div>
             <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
@@ -260,8 +272,17 @@
     <div class="message" id="message"></div>
     
     <script>
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userData = {
+            id: urlParams.get('user_id'),
+            first_name: urlParams.get('first_name') || 'Игрок',
+            username: urlParams.get('username') || '',
+            photo_id: urlParams.get('photo_id') || ''
+        };
+        
         let gameState = {
-            balance: 100,
+            balance: 0,
             betAmount: 10,
             isPlaying: false,
             multiplier: 1.0,
@@ -282,22 +303,60 @@
             airplane: document.getElementById('airplane'),
             history: document.getElementById('history'),
             message: document.getElementById('message'),
-            gameArea: document.querySelector('.game-area')
+            gameArea: document.querySelector('.game-area'),
+            btnBack: document.getElementById('btn-back')
         };
         
         // Инициализация игры
-        function initGame() {
-            updateBalance();
+        async function initGame() {
+            // Загружаем данные пользователя
+            await loadUserData();
             
-            // Назначение обработчиков событий
+            // Назначаем обработчики событий
             elements.btnBet.addEventListener('click', placeBet);
             elements.btnCashout.addEventListener('click', cashOut);
             elements.btnAuto.addEventListener('click', toggleAutoCashout);
             elements.betAmount.addEventListener('input', validateBet);
+            elements.btnBack.addEventListener('click', goBack);
+            
+            updateControls();
+        }
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/aviator/init', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: userData
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    gameState.balance = data.balance;
+                    gameState.autoCashout = data.auto_cashout || 2.0;
+                    updateBalance();
+                    
+                    // Обновляем кнопку авто-вывода
+                    if (gameState.autoCashout > 0) {
+                        elements.btnAuto.textContent = `АВТО (${gameState.autoCashout}x)`;
+                        elements.btnAuto.classList.add('btn-cashout');
+                        elements.btnAuto.classList.remove('btn-auto');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showMessage('Ошибка загрузки данных', true);
+            }
         }
         
         // Размещение ставки
-        function placeBet() {
+        async function placeBet() {
             if (gameState.isPlaying) {
                 showMessage('Завершите текущую игру!', true);
                 return;
@@ -310,32 +369,69 @@
                 return;
             }
             
-            if (betAmount > gameState.balance) {
-                showMessage('Недостаточно средств', true);
-                return;
+            try {
+                const response = await fetch('/api/aviator/bet', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: userData,
+                        bet_amount: betAmount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    gameState.currentBet = betAmount;
+                    gameState.balance = data.balance;
+                    gameState.isPlaying = true;
+                    gameState.crashPoint = data.crash_point;
+                    
+                    updateBalance();
+                    updateControls();
+                    startGame();
+                } else {
+                    showMessage(data.message || 'Ошибка при размещении ставки', true);
+                }
+            } catch (error) {
+                console.error('Error placing bet:', error);
+                showMessage('Ошибка соединения', true);
             }
-            
-            // Фиксируем текущую ставку и списываем с баланса
-            gameState.currentBet = betAmount;
-            gameState.balance -= betAmount;
-            gameState.isPlaying = true;
-            gameState.crashPoint = (Math.random() * 5 + 1).toFixed(2); // Случайный крах от 1.00 до 6.00
-            
-            updateBalance();
-            updateControls();
-            startGame();
         }
         
         // Забрать выигрыш
-        function cashOut() {
+        async function cashOut() {
             if (!gameState.isPlaying) return;
             
-            const winAmount = Math.floor(gameState.currentBet * gameState.multiplier);
-            const profit = winAmount - gameState.currentBet;
-            
-            gameState.balance += winAmount;
-            showMessage(`Вы выиграли ${profit}₽`);
-            endGame(true);
+            try {
+                const response = await fetch('/api/aviator/cashout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: userData,
+                        multiplier: gameState.multiplier,
+                        auto: gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    gameState.balance = data.balance;
+                    const profit = Math.floor(gameState.currentBet * gameState.multiplier) - gameState.currentBet;
+                    showMessage(`Вы выиграли ${profit}₽`);
+                    endGame(true);
+                } else {
+                    showMessage(data.message || 'Ошибка при выводе средств', true);
+                }
+            } catch (error) {
+                console.error('Error cashing out:', error);
+                showMessage('Ошибка соединения', true);
+            }
         }
         
         // Настройка авто-вывода
@@ -357,38 +453,25 @@
         
         // Создание эффекта взлета (вертикальные линии)
         function createFlightLines() {
-            // Очищаем предыдущие линии
             clearFlightLines();
             
-            // Создаем новые линии
             gameState.flightLinesInterval = setInterval(() => {
-                // Случайное количество линий (3-8)
                 const lineCount = Math.floor(Math.random() * 6) + 3;
                 
                 for (let i = 0; i < lineCount; i++) {
                     const line = document.createElement('div');
                     line.className = 'flight-line';
-                    
-                    // Случайная высота линии (10-40px)
-                    const height = Math.floor(Math.random() * 30) + 10;
-                    line.style.height = `${height}px`;
-                    
-                    // Случайная позиция по горизонтали
-                    const left = Math.floor(Math.random() * elements.gameArea.offsetWidth);
-                    line.style.left = `${left}px`;
-                    
-                    // Случайная скорость анимации (0.3-1s)
-                    const duration = (Math.random() * 0.7) + 0.3;
-                    line.style.animationDuration = `${duration}s`;
+                    line.style.height = `${Math.floor(Math.random() * 30) + 10}px`;
+                    line.style.left = `${Math.floor(Math.random() * elements.gameArea.offsetWidth)}px`;
+                    line.style.animationDuration = `${(Math.random() * 0.7) + 0.3}s`;
                     
                     elements.gameArea.appendChild(line);
                     
-                    // Удаляем линию после анимации
                     setTimeout(() => {
                         if (line.parentNode) {
                             line.parentNode.removeChild(line);
                         }
-                    }, duration * 1000);
+                    }, parseFloat(line.style.animationDuration) * 1000);
                 }
             }, 100);
         }
@@ -396,11 +479,8 @@
         // Очистка эффекта взлета
         function clearFlightLines() {
             clearInterval(gameState.flightLinesInterval);
-            const lines = document.querySelectorAll('.flight-line');
-            lines.forEach(line => {
-                if (line.parentNode) {
-                    line.parentNode.removeChild(line);
-                }
+            document.querySelectorAll('.flight-line').forEach(line => {
+                if (line.parentNode) line.parentNode.removeChild(line);
             });
         }
         
@@ -413,9 +493,7 @@
             elements.gameArea.appendChild(explosion);
             
             setTimeout(() => {
-                if (explosion.parentNode) {
-                    explosion.parentNode.removeChild(explosion);
-                }
+                if (explosion.parentNode) explosion.parentNode.removeChild(explosion);
             }, 500);
         }
         
@@ -426,26 +504,19 @@
             elements.airplane.style.bottom = '50px';
             elements.airplane.classList.remove('crash');
             
-            // Анимация полета самолета
             setTimeout(() => {
                 elements.airplane.style.bottom = 'calc(50% - 30px)';
-                
-                // Запускаем эффект линий взлета
                 createFlightLines();
                 
-                // Запуск игры
                 gameState.interval = setInterval(() => {
                     gameState.multiplier = parseFloat((gameState.multiplier + 0.01).toFixed(2));
                     elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
                     
-                    // Проверка авто-вывода
                     if (gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout) {
                         cashOut();
                     }
                     
-                    // Проверка краха
                     if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
-                        // Эффект взрыва и падения
                         createExplosion();
                         elements.airplane.classList.add('crash');
                         
@@ -483,6 +554,7 @@
             }
             
             if (value < 10) {
+                elements.betAmount.value = 10;
                 return;
             }
             
@@ -510,7 +582,6 @@
             div.textContent = `${multiplier.toFixed(2)}x`;
             elements.history.prepend(div);
             
-            // Ограничиваем историю 10 последними играми
             if (elements.history.children.length > 10) {
                 elements.history.removeChild(elements.history.lastChild);
             }
@@ -526,6 +597,17 @@
             setTimeout(() => {
                 elements.message.classList.remove('show');
             }, 3000);
+        }
+        
+        // Возврат на главную страницу
+        function goBack() {
+            const params = new URLSearchParams();
+            params.append('user_id', userData.id);
+            if (userData.first_name) params.append('first_name', userData.first_name);
+            if (userData.username) params.append('username', userData.username);
+            if (userData.photo_id) params.append('photo_id', userData.photo_id);
+            
+            window.location.href = `/?${params.toString()}`;
         }
         
         // Инициализация при загрузке
