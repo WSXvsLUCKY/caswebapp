@@ -136,7 +136,6 @@ class User:
             
         try:
             cursor = connection.cursor()
-            # Запрашиваем только существующие колонки
             cursor.execute("""
             SELECT username, first_name, balance, auto_cashout, photo_url 
             FROM users WHERE user_id = %s
