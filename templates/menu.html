@@ -528,17 +528,17 @@ function launchGame(game) {
         }
 
         // Пополнение баланса
-        function deposit() {
-            const amount = parseFloat(document.getElementById('depositAmount').value);
-            if (isNaN(amount) {
-                alert('Введите корректную сумму');
-                return;
-            }
-            
-            alert(`Пополнение на ${amount} монет успешно!`);
-            closeModal('depositModal');
-            document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
-        }
+function deposit() {
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    if (isNaN(amount)) { // <-- Добавлена закрывающая скобка
+        alert('Введите корректную сумму');
+        return;
+    }
+
+    alert(`Пополнение на ${amount} монет успешно!`);
+    closeModal('depositModal');
+    document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
+}
 
         // Вывод средств
         function withdraw() {
