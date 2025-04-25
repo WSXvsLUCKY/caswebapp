@@ -523,6 +523,20 @@
             // Убеждаемся, что баланс является числом и форматируем его до двух знаков после запятой
             elements.balance.textContent = parseFloat(gameState.balance).toFixed(2);
         }
+        // Обновление элементов управления (кнопки "Ставка" / "Забрать")
+        function updateControls() { // <- Функция updateControls определена здесь (около строки 300)
+            // Кнопка "Ставка" активна только если игра НЕ идет И состояние бэкенда 'idle'
+            // AND it's not explicitly disabled by a pending loadUserData call
+            elements.btnBet.disabled = gameState.isPlaying || gameState.game_state !== 'idle';
+
+            // Кнопка "Забрать" активна только если игра ИДЕТ И состояние бэкенда 'bet_placed'
+            elements.btnCashout.disabled = !gameState.isPlaying || gameState.game_state !== 'bet_placed';
+
+            // Поле ввода ставки доступно только если игра НЕ идет И состояние бэкенда 'idle'
+            elements.betAmount.disabled = gameState.isPlaying || gameState.game_state !== 'idle';
+
+            // ... остальной код функции updateControls ...
+        }
         // Размещение ставки
         async function placeBet() {
             // Проверка состояния игры на фронтенде перед отправкой запроса
