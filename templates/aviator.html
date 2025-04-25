@@ -5,71 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Авиатор</title>
     <style>
-        /* Переменные для цветов и градиентов */
         :root {
             --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            --card-bg: rgba(30, 30, 60, 0.7); /* Полупрозрачный фон карточки */
-            --primary: #6a11cb; /* Основной фиолетовый */
-            --secondary: #2575fc; /* Дополнительный синий */
-            --accent: #00f5ff; /* Акцентный бирюзовый */
-            --text-glow: 0 0 10px rgba(0, 245, 255, 0.7); /* Эффект свечения текста */
+            --card-bg: rgba(30, 30, 60, 0.9);
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --accent: #00f5ff;
+            --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
         }
 
-        /* Базовые стили для html и body */
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%; /* html и body занимают всю высоту viewport */
+            height: 100%;
             width: 100%;
-        }
-
-        body {
             font-family: 'Montserrat', sans-serif;
-            background: var(--main-gradient); /* Основной фон Body (градиент) */
-            background-color: #1a1a2e; /* Фоллбэк цвет, если градиент не поддерживается */
+            background: var(--main-gradient) fixed;
+            background-color: #1a1a2e;
             color: white;
-            min-height: 100%; /* Body занимает минимум всю высоту */
-            box-sizing: border-box; /* Padding и border включаются в размеры элемента */
-            display: flex; /* Используем flexbox для центрирования контейнера */
-            justify-content: center; /* Центрируем по горизонтали */
-            align-items: flex-start; /* Выравниваем по верху */
-            padding: 20px; /* Добавляем общий отступ */
+            overflow-x: hidden;
         }
 
-        /* Стили игрового контейнера */
+        .main-container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
         .game-container {
-            width: 100%; /* Контейнер занимает всю доступную ширину (с учетом padding body) */
-            max-width: 500px; /* Но не более 500px */
-            background: var(--card-bg); /* Фон контейнера (полупрозрачный) */
-            background-color: rgba(30, 30, 60, 0.9); /* Фоллбэк цвет */
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
             border-radius: 15px;
             padding: 20px;
-            backdrop-filter: blur(10px); /* Эффект размытия фона под контейнером */
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
             position: relative;
             display: flex;
-            flex-direction: column; /* Элементы внутри контейнера располагаются вертикально */
-            /* min-height: calc(100vh - 40px);  Может не понадобиться при display: flex на body */
-            box-sizing: border-box;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* Стили заголовка (кнопка назад, название, баланс) */
         .header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
             align-items: center;
-            flex-wrap: wrap; /* Перенос элементов на новую строку, если не помещаются */
-            gap: 10px; /* Расстояние между элементами в заголовке */
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 1.5em; /* Размер заголовка */
-            flex-grow: 1; /* Занимает доступное пространство */
-            text-align: center; /* Центрируем название */
-            min-width: 100px; /* Минимальная ширина, чтобы не сжимался слишком сильно */
+            font-size: 1.5em;
+            flex-grow: 1;
+            text-align: center;
+            min-width: 100px;
         }
 
         .back-button {
@@ -80,14 +75,13 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            /* margin-right: 10px; Убран, т.к. есть gap */
             transition: background 0.2s;
-            flex-shrink: 0; /* Не сжимать кнопку */
+            flex-shrink: 0;
         }
 
-         .back-button:hover {
-             background: rgba(255, 255, 255, 0.2);
-         }
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
 
         .balance {
             background: rgba(0, 184, 148, 0.15);
@@ -95,53 +89,46 @@
             border-radius: 10px;
             font-weight: bold;
             border: 1px solid var(--accent);
-            flex-shrink: 0; /* Не сжимать баланс */
+            flex-shrink: 0;
         }
 
-        /* Стили области игры (где летает самолет и показывается множитель) */
         .game-area {
             height: 300px;
             background: linear-gradient(180deg, #0f3460, #1a1a2e);
             border-radius: 10px;
             position: relative;
             overflow: hidden;
-            margin-bottom: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            flex-grow: 1; /* Занимает доступное пространство */
-            display: flex; /* Используем flexbox для центрирования множителя */
+            display: flex;
             justify-content: center;
-            align-items: center; /* Центрируем множитель по центру */
+            align-items: center;
         }
 
         .airplane {
-            position: absolute; /* Абсолютное позиционирование внутри game-area */
-            bottom: 50px; /* Начальная позиция */
+            position: absolute;
+            bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
             width: 60px;
             height: 60px;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300f5ff"><path d="M22 16.21v-1.895L14 8V4a2 2 0 0 0-4 0v4l-8 6.315v1.895l8-2.526V18l-2 2v2l3.5-1 3.5 1v-2l-2-2v-4.316l8 2.526z"/></svg>');
             background-size: contain;
-            transition: all 0.5s ease; /* Плавное перемещение при старте */
+            transition: all 0.5s ease;
             filter: drop-shadow(0 0 5px rgba(0, 245, 255, 0.7));
-            z-index: 10; /* Поверх линий полета */
+            z-index: 10;
         }
 
         .airplane.crash {
-            animation: crash 1.5s ease-in forwards; /* Анимация падения */
-            transform: translateX(-50%) rotate(180deg); /* Поворот при падении */
+            animation: crash 1.5s ease-in forwards;
+            transform: translateX(-50%) rotate(180deg);
         }
 
         @keyframes crash {
-            0% { bottom: calc(50% - 30px); transform: translateX(-50%) rotate(0deg); } /* Начинаем падать из центра */
-            100% { bottom: -100px; transform: translateX(-50%) rotate(180deg); } /* Падаем за пределы экрана */
+            0% { bottom: calc(50% - 30px); transform: translateX(-50%) rotate(0deg); }
+            100% { bottom: -100px; transform: translateX(-50%) rotate(180deg); }
         }
 
         .multiplier {
-            position: relative; /* Относительно game-area */
-            top: 0; /* Центрируется flexbox */
-            left: 0; /* Центрируется flexbox */
-            transform: none; /* Сброс transform, если центрируем через flexbox */
             background: rgba(0, 0, 0, 0.5);
             padding: 10px 20px;
             border-radius: 20px;
@@ -153,12 +140,10 @@
             z-index: 10;
         }
 
-        /* Стили для контролов (поля ввода и кнопок) */
         .controls {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-bottom: 20px;
         }
 
         .bet-control {
@@ -175,7 +160,7 @@
             color: white;
             outline: none;
             box-sizing: border-box;
-            min-width: 0; /* Позволяет input сжиматься в flex контейнере */
+            min-width: 0;
         }
 
         input[type="number"]::placeholder {
@@ -194,8 +179,8 @@
             cursor: pointer;
             transition: all 0.2s;
             box-sizing: border-box;
-            flex-shrink: 0; /* Предотвращаем сжатие кнопки в flex контейнере */
-            min-width: 80px; /* Минимальная ширина для кнопок */
+            flex-shrink: 0;
+            min-width: 80px;
         }
 
         button:disabled {
@@ -221,10 +206,10 @@
             box-shadow: 0 0 15px rgba(0, 184, 148, 0.5);
         }
 
-         .btn-cashout:not(:disabled):hover {
-             transform: translateY(-2px);
-             box-shadow: 0 0 25px rgba(0, 184, 148, 0.7);
-         }
+        .btn-cashout:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 184, 148, 0.7);
+        }
 
         .btn-auto {
             background: linear-gradient(to right, #d63031, #ff7675);
@@ -232,23 +217,21 @@
             box-shadow: 0 0 15px rgba(214, 48, 49, 0.5);
         }
 
-         .btn-auto:not(:disabled):hover {
-             transform: translateY(-2px);
-             box-shadow: 0 0 25px rgba(214, 48, 49, 0.7);
-         }
+        .btn-auto:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(214, 48, 49, 0.7);
+        }
 
-        /* Стили истории игр */
         .history {
             display: flex;
             gap: 10px;
-            margin-top: 0;
-            padding-bottom: 10px; /* Отступ снизу для прокрутки */
-            overflow-x: auto; /* Включаем горизонтальную прокрутку */
+            padding-bottom: 10px;
+            overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;
             flex-shrink: 0;
-            justify-content: flex-end; /* Выравнивание по правому краю */
+            justify-content: flex-end;
         }
 
         .history::-webkit-scrollbar {
@@ -266,14 +249,13 @@
         }
 
         .win {
-            color: #55efc4; /* Зеленый */
+            color: #55efc4;
         }
 
         .lose {
-            color: #ff7675; /* Красный */
+            color: #ff7675;
         }
 
-        /* Стили для сообщений (всплывающие) */
         .message {
             position: fixed;
             top: 20px;
@@ -300,24 +282,20 @@
             box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
         }
 
-        /* Стили для эффекта линий полета */
         .flight-line {
             position: absolute;
-            bottom: 0; /* Линии начинаются снизу */
+            bottom: 0;
             width: 1px;
             background: rgba(0, 245, 255, 0.7);
             z-index: 1;
-            /* transform: translateY(-100%);  Убран, т.к. анимация управляет положением */
-            animation: flyUp linear forwards; /* Анимация полета вверх */
+            animation: flyUp linear forwards;
         }
 
         @keyframes flyUp {
             0% { bottom: 0; opacity: 0.5; height: 10px; }
-            100% { bottom: 100%; opacity: 0; height: 50px; } /* Линии летят вверх */
+            100% { bottom: 100%; opacity: 0; height: 50px; }
         }
 
-
-        /* Стили для эффекта взрыва */
         .explosion {
             position: absolute;
             width: 100px;
@@ -335,34 +313,35 @@
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="header">
-            <button class="back-button" id="btn-back">← Назад</button>
-            <h1>✈️ Авиатор</h1>
-            <div class="balance">💰 <span id="balance">0.00</span>₽</div>
-        </div>
-
-        <div class="game-area">
-            <div class="multiplier" id="multiplier">1.00x</div>
-            <div class="airplane" id="airplane"></div>
-        </div>
-
-        <div class="controls">
-            <div class="bet-control">
-                <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
-                <button class="btn-bet" id="btn-bet">СТАВКА</button>
+    <div class="main-container">
+        <div class="game-container">
+            <div class="header">
+                <button class="back-button" id="btn-back">← Назад</button>
+                <h1>✈️ Авиатор</h1>
+                <div class="balance">💰 <span id="balance">0.00</span>₽</div>
             </div>
-            <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
-            <button class="btn-auto" id="btn-auto">АВТО (2x)</button>
-        </div>
 
-        <div class="history" id="history"></div>
+            <div class="game-area">
+                <div class="multiplier" id="multiplier">1.00x</div>
+                <div class="airplane" id="airplane"></div>
+            </div>
+
+            <div class="controls">
+                <div class="bet-control">
+                    <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
+                    <button class="btn-bet" id="btn-bet">СТАВКА</button>
+                </div>
+                <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
+                <button class="btn-auto" id="btn-auto">АВТО (2x)</button>
+            </div>
+
+            <div class="history" id="history"></div>
+        </div>
     </div>
 
     <div class="message" id="message"></div>
 
     <script>
-        // Получаем параметры пользователя из URL
         const urlParams = new URLSearchParams(window.location.search);
         const userData = {
             id: urlParams.get('user_id'),
@@ -371,21 +350,19 @@
             photo_id: urlParams.get('photo_id') || ''
         };
 
-        // Состояние игры
         let gameState = {
             balance: 0,
-            betAmount: 10, // Начальное значение поля ввода ставки
-            isPlaying: false, // Флаг активности игры (нужно ли показывать множитель и кнопку "Забрать")
-            multiplier: 1.0, // Текущий множитель
-            autoCashout: 0, // Множитель для авто-вывода (0 = отключено)
-            crashPoint: 0, // Множитель, на котором самолет разбивается (получаем с бэкенда при ставке)
-            interval: null, // Интервал для обновления множителя
-            currentBet: 0, // Сумма текущей активной ставки пользователя
-            flightLinesInterval: null, // Интервал для эффекта взлета
-            game_state: 'idle' // Текущее состояние игры пользователя (из бэкенда) - добавлено
+            betAmount: 10,
+            isPlaying: false,
+            multiplier: 1.0,
+            autoCashout: 0,
+            crashPoint: 0,
+            interval: null,
+            currentBet: 0,
+            flightLinesInterval: null,
+            game_state: 'idle'
         };
 
-        // Ссылки на DOM элементы
         const elements = {
             balance: document.getElementById('balance'),
             betAmount: document.getElementById('bet-amount'),
@@ -400,42 +377,50 @@
             btnBack: document.getElementById('btn-back')
         };
 
-        // Инициализация игры при загрузке страницы
         async function initGame() {
-            // Загружаем данные пользователя и начальное состояние игры с бэкенда
+            await resetGameState();
             await loadUserData();
 
-            // Назначаем обработчики событий
             elements.btnBet.addEventListener('click', placeBet);
             elements.btnCashout.addEventListener('click', cashOut);
-            elements.btnAuto.addEventListener('click', toggleAutoCashout); // Вам нужно реализовать логику настройки авто-вывода
+            elements.btnAuto.addEventListener('click', toggleAutoCashout);
             elements.betAmount.addEventListener('input', validateBet);
             elements.btnBack.addEventListener('click', goBack);
-
-            // updateControls(); // Будет вызван в loadUserData после получения состояния
-            // startGame(); // Не вызываем startGame здесь, она начинается после успешной ставки
         }
 
-        // Загрузка данных пользователя и начального состояния игры с бэкенда
+        async function resetGameState() {
+            try {
+                const response = await fetch('/api/aviator/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: userData
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    gameState.game_state = data.game_state || 'idle';
+                }
+            } catch (error) {
+                console.error('Error resetting game state:', error);
+            }
+        }
+
         async function loadUserData() {
             try {
-                // Убеждаемся, что кнопка ставки отключена пока идет загрузка/синхронизация
-                elements.btnBet.disabled = true;
-                elements.betAmount.disabled = true;
-                elements.btnCashout.disabled = true; // Также отключаем кнопку вывода на время синхронизации
-                elements.btnAuto.disabled = true; // И кнопку авто
-
                 const response = await fetch('/api/aviator/init', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        user: userData // Отправляем ID пользователя
+                        user: userData
                     })
                 });
 
-                // Проверяем, что ответ успешный по статусу HTTP, а не только по полю status в JSON
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -443,104 +428,51 @@
 
                 const data = await response.json();
 
-                // Если в теле ответа статус не 'success', считаем это ошибкой
                 if (data.status !== 'success') {
                     throw new Error(data.message || 'Unknown error from API');
                 }
 
-                // Обновляем состояние фронтенда на основе данных с бэкенда
-                gameState.balance = parseFloat(data.balance); // Убеждаемся, что это число
-                gameState.autoCashout = parseFloat(data.auto_cashout) || 0; // Убеждаемся, что это число
-                gameState.currentBet = parseFloat(data.current_bet) || 0; // Загружаем текущую ставку с бэкенда
-                gameState.game_state = data.game_state; // Загружаем состояние игры с бэкенда
-
-                // Определяем isPlaying на основе game_state с бэкенда
+                gameState.balance = parseFloat(data.balance);
+                gameState.autoCashout = parseFloat(data.auto_cashout) || 0;
+                gameState.currentBet = parseFloat(data.current_bet) || 0;
+                gameState.game_state = data.game_state || 'idle';
                 gameState.isPlaying = (gameState.game_state === 'bet_placed');
 
-                updateBalance(); // Обновляем отображение баланса
+                updateBalance();
 
-                // Обновляем кнопку авто-вывода на основе загруженного значения
                 if (gameState.autoCashout > 0) {
                     elements.btnAuto.textContent = `АВТО (${gameState.autoCashout.toFixed(2)}x)`;
                     elements.btnAuto.classList.add('btn-cashout');
                     elements.btnAuto.classList.remove('btn-auto');
                 } else {
-                    elements.btnAuto.textContent = 'АВТО (2x)'; // Текст по умолчанию, если авто-вывод отключен
+                    elements.btnAuto.textContent = 'АВТО (2x)';
                     elements.btnAuto.classList.add('btn-auto');
                     elements.btnAuto.classList.remove('btn-cashout');
                 }
 
-                // --- КНОПКИ БУДУТ ВКЛЮЧЕНЫ/ОТКЛЮЧЕНЫ ЗДЕСЬ ПОСЛЕ УСПЕШНОГО ПОЛУЧЕНИЯ СОСТОЯНИЯ ---
-                updateControls(); // Обновляем кнопки "Ставка" / "Забрать" на основе нового isPlaying
+                updateControls();
 
-                // Отображение истории игры
                 if (data.history && Array.isArray(data.history)) {
-                   displayHistory(data.history); // Вызываем новую функцию для отображения истории
+                   displayHistory(data.history);
                 }
 
-
-                // Если состояние игры 'bet_placed', возможно, нужно возобновить анимацию?
-                // Для этого нужно, чтобы бэкенд возвращал текущий множитель раунда, что он пока не делает.
                 if (gameState.isPlaying) {
-                    // Фронтенд загрузился, а игра уже идет на бэкенде
-                    elements.multiplier.textContent = 'В игре...'; // Или другое индикация
-                    // Вывести текущую ставку где-то, если нужно
-                    // showMessage(`У вас активная ставка ${gameState.currentBet}₽`);
-
-                    // Нужна логика синхронизации множителя с сервером или ожидания следующего раунда
-                    // Пока без этой логики, пользователь увидит кнопки, но анимация не будет идти.
-                    // Возможно, лучше сразу сбрасывать состояние на бэкенде, как мы сделали.
-
+                    elements.multiplier.textContent = 'В игре...';
                 } else {
-                    // Состояние 'idle', 'cashed_out', или 'crashed'. Готов к новой ставке.
-                    elements.multiplier.textContent = '1.00x'; // Сброс отображения множителя
-                    elements.airplane.style.bottom = '50px'; // Сброс позиции самолета
-                    elements.airplane.classList.remove('crash'); // Убираем класс крушения
-                    clearFlightLines(); // Убираем линии полета
-
-                    // Поле ввода ставки и кнопка "Ставка" будут доступны, т.к. game_state='idle'
-                    elements.betAmount.value = gameState.betAmount; // Восстанавливаем стандартное значение в поле ввода
+                    endGame(false);
                 }
-
 
             } catch (error) {
                 console.error('Error loading user data:', error);
                 showMessage('Ошибка соединения или загрузки данных: ' + error.message, true);
-                // --- НОВАЯ ЛОГИКА: Включаем кнопку ставки при ошибке загрузки ---
-                // Если произошла ошибка, мы не знаем актуальное состояние, но лучше позволить
-                // пользователю попробовать еще раз инициализировать или сделать ставку.
-                // Или показать сообщение об ошибке и полностью заблокировать?
-                // Пока просто включаем, чтобы не блокировать полностью.
-                elements.btnBet.disabled = false;
-                elements.betAmount.disabled = false;
-                elements.btnCashout.disabled = true; // Эти должны быть отключены при ошибке
-                elements.btnAuto.disabled = false; // Включаем кнопку авто, если она не связана с текущей ставкой
-                // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                elements.btnBet.disabled = true;
+                elements.btnCashout.disabled = true;
+                elements.betAmount.disabled = true;
+                elements.btnAuto.disabled = true;
             }
         }
-        // Обновление отображения баланса
-        function updateBalance() { // <- Функция updateBalance определена здесь (около строки 281)
-            // Убеждаемся, что баланс является числом и форматируем его до двух знаков после запятой
-            elements.balance.textContent = parseFloat(gameState.balance).toFixed(2);
-        }
-        // Обновление элементов управления (кнопки "Ставка" / "Забрать")
-        function updateControls() { // <- Функция updateControls определена здесь (около строки 300)
-            // Кнопка "Ставка" активна только если игра НЕ идет И состояние бэкенда 'idle'
-            // AND it's not explicitly disabled by a pending loadUserData call
-            elements.btnBet.disabled = gameState.isPlaying || gameState.game_state !== 'idle';
 
-            // Кнопка "Забрать" активна только если игра ИДЕТ И состояние бэкенда 'bet_placed'
-            elements.btnCashout.disabled = !gameState.isPlaying || gameState.game_state !== 'bet_placed';
-
-            // Поле ввода ставки доступно только если игра НЕ идет И состояние бэкенда 'idle'
-            elements.betAmount.disabled = gameState.isPlaying || gameState.game_state !== 'idle';
-
-            // ... остальной код функции updateControls ...
-        }
-        // Размещение ставки
         async function placeBet() {
-            // Проверка состояния игры на фронтенде перед отправкой запроса
-            // isPlaying должен уже соответствовать game_state из бэкенда после loadUserData
             if (gameState.isPlaying || gameState.game_state !== 'idle') {
                 showMessage(`Игра в процессе или не готова. Текущее состояние: ${gameState.game_state}`, true);
                 return;
@@ -553,31 +485,26 @@
                 return;
             }
 
-            // Проверка баланса на фронтенде (хотя бэкенд тоже проверит)
             if (betAmount > gameState.balance) {
                 showMessage('Недостаточно средств', true);
                 return;
             }
 
             try {
-                // Отключаем элементы управления сразу после нажатия, чтобы избежать двойного клика
                 elements.btnBet.disabled = true;
                 elements.betAmount.disabled = true;
 
-
-                // Отправляем запрос на бэкенд для размещения ставки
                 const response = await fetch('/api/aviator/bet', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        user: userData, // Отправляем ID пользователя
+                        user: userData,
                         bet_amount: betAmount
                     })
                 });
 
-                // Проверяем, что ответ успешный по статусу HTTP
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -586,65 +513,54 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Обновляем состояние фронтенда на основе успешного ответа
-                    gameState.currentBet = betAmount; // Сохраняем сумму ставки
-                    gameState.balance = parseFloat(data.balance); // Обновляем баланс после списания
-                    gameState.isPlaying = true; // Игра началась
-                    gameState.crashPoint = parseFloat(data.crash_point); // Получаем точку крушения
-                    gameState.game_state = data.game_state; // Обновляем состояние игры с бэкенда ('bet_placed')
+                    gameState.currentBet = betAmount;
+                    gameState.balance = parseFloat(data.balance);
+                    gameState.isPlaying = true;
+                    gameState.crashPoint = parseFloat(data.crash_point);
+                    gameState.game_state = 'bet_placed';
 
-                    updateBalance(); // Обновляем отображение баланса
-                    updateControls(); // Обновляем доступность кнопок ("Забрать" станет доступна)
-                    startGame(); // Запускаем анимацию игры на фронтенде
+                    updateBalance();
+                    updateControls();
+                    startGame();
                     showMessage('Ставка принята!');
 
                 } else {
-                    // Если бэкенд вернул ошибку (например, недостаточно средств, игра уже идет)
                     showMessage(data.message || 'Ошибка при размещении ставки', true);
-                    // Включаем кнопки снова, если ставка не прошла
                     elements.btnBet.disabled = false;
                     elements.betAmount.disabled = false;
                 }
             } catch (error) {
                 console.error('Error placing bet:', error);
                 showMessage('Ошибка соединения при размещении ставки: ' + error.message, true);
-                // Включаем кнопки снова при ошибке соединения
                 elements.btnBet.disabled = false;
                 elements.betAmount.disabled = false;
             }
         }
 
-        // Забрать выигрыш
         async function cashOut() {
-            // Проверка состояния игры на фронтенде
             if (!gameState.isPlaying || gameState.game_state !== 'bet_placed') {
                  showMessage(`Нельзя забрать. Текущее состояние: ${gameState.game_state}`, true);
                  return;
             }
 
-            // Останавливаем анимацию и интервалы на фронтенде СРАЗУ при нажатии кнопки
             clearInterval(gameState.interval);
             clearFlightLines();
-            gameState.isPlaying = false; // Игра завершена на фронтенде (будет уточнено loadUserData)
-            // Не обновляем controls и balance здесь, ждем ответа от сервера или просто завершаем
-            elements.btnCashout.disabled = true; // Отключаем кнопку "Забрать" после нажатия
-
+            gameState.isPlaying = false;
+            elements.btnCashout.disabled = true;
 
             try {
-                // Отправляем запрос на бэкенд для вывода средств
                 const response = await fetch('/api/aviator/cashout', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        user: userData, // Отправляем ID пользователя
-                        multiplier: gameState.multiplier, // Отправляем множитель, на котором забрали
-                        auto: gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout // Флаг авто-вывода
+                        user: userData,
+                        multiplier: gameState.multiplier,
+                        auto: gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout
                     })
                 });
 
-                // Проверяем, что ответ успешный по статусу HTTP
                 if (!response.ok) {
                      const errorData = await response.json();
                      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -653,64 +569,34 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Обновляем состояние фронтенда на основе успешного ответа
-                    gameState.balance = parseFloat(data.balance); // Обновляем баланс после выигрыша
-                    gameState.currentBet = 0; // Ставка обнулена
-                    gameState.game_state = data.game_state; // Обновляем состояние с бэкенда ('cashed_out')
+                    gameState.balance = parseFloat(data.balance);
+                    gameState.currentBet = 0;
+                    gameState.game_state = data.game_state || 'idle';
 
-                    const profit = parseFloat(data.profit); // Получаем прибыль с бэкенда
+                    const profit = parseFloat(data.profit);
                     showMessage(`Вы выиграли ${profit.toFixed(2)}₽`);
 
-                    // Обновление истории из ответа
                     if (data.history && Array.isArray(data.history)) {
-                       displayHistory(data.history); // Вызываем функцию для отображения истории
+                       displayHistory(data.history);
                     }
 
-                    // В любом случае (успех или ошибка), после попытки вывода, считаем раунд завершенным на фронтенде
-                    // и запускаем синхронизацию состояния с бэкендом.
-                    endGame(true); // Передаем результат выигрыша
-
+                    endGame(true);
                 } else {
-                    // Если бэкенд вернул ошибку (например, "Нет активной ставки")
                     showMessage(data.message || 'Ошибка при выводе средств', true);
-                    // В этом случае бэкенд сказал, что ставки нет.
-                    // Это могло быть из-за рассинхронизации.
-                    // Принудительно сбрасываем состояние фронтенда, чтобы можно было сделать новую ставку.
-                    gameState.isPlaying = false;
-                    gameState.game_state = 'idle'; // Или другое подходящее состояние
-                    gameState.currentBet = 0;
-                    updateControls(); // Обновляем кнопки
-                    elements.multiplier.textContent = '1.00x'; // Сброс множителя
-                    // Принудительно запускаем синхронизацию после ошибки вывода
-                    endGame(false); // Считаем проигрышем или неопределенным исходом
-
+                    endGame(false);
                 }
             } catch (error) {
                 console.error('Error cashing out:', error);
                 showMessage('Ошибка соединения при выводе средств: ' + error.message, true);
-                // При ошибке соединения, возможно, состояние игры неопределено.
-                // Принудительно сбрасываем состояние фронтенда и синхронизируется.
-                gameState.isPlaying = false;
-                gameState.game_state = 'idle'; // Или другое подходящее состояние
-                gameState.currentBet = 0;
-                updateControls(); // Обновляем кнопки
-                elements.multiplier.textContent = '1.00x'; // Сброс множителя
-                // Принудительно запускаем синхронизацию после ошибки
-                endGame(false); // Считаем проигрышем или неопределенным исходом
+                endGame(false);
             }
         }
 
-        // Логика обработки крушения (когда самолет разбился)
-        // Этот код на фронтенде определяет, когда самолет разбился визуально
-        // И должен сообщить об этом бэкенду, чтобы тот зафиксировал проигрыш
         async function handleCrash() {
-            // Останавливаем анимацию и интервалы на фронтенде
             clearInterval(gameState.interval);
             clearFlightLines();
-            gameState.isPlaying = false; // Игра завершена на фронтенде (будет уточнено loadUserData)
+            gameState.isPlaying = false;
 
-            // Сообщаем бэкенду о крушении, если пользователь был в игре и еще не вывел
-            // Используем gameState.game_state для проверки, чтобы не отправлять crash после cashOut
             if (gameState.game_state === 'bet_placed' && gameState.currentBet > 0) {
                  try {
                       const response = await fetch('/api/aviator/crash', {
@@ -718,10 +604,9 @@
                            headers: { 'Content-Type': 'application/json' },
                            body: JSON.stringify({
                                 user: userData,
-                                multiplier: gameState.multiplier // Множитель в момент крушения
+                                multiplier: gameState.multiplier
                            })
                       });
-                      // Проверяем, что ответ успешный по статусу HTTP
                       if (!response.ok) {
                            const errorData = await response.json();
                            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -729,47 +614,26 @@
                       const data = await response.json();
 
                       if (data.status === 'success') {
-                           // Бэкенд успешно зафиксировал проигрыш
-                           gameState.balance = parseFloat(data.balance); // Баланс уже списан на бэкенде
-                           gameState.currentBet = 0; // Ставка обнулена
-                           gameState.game_state = data.game_state; // Состояние 'crashed'
+                           gameState.balance = parseFloat(data.balance);
+                           gameState.currentBet = 0;
+                           gameState.game_state = data.game_state || 'idle';
                            showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`, true);
-                           // TODO: Обновить отображение истории из ответа, если бэкенд возвращает историю (сейчас не возвращает в /crash)
-                           // loadUserData() в конце endGame обновит историю при следующей синхронизации.
                       } else {
-                           // Бэкенд сказал, что ставки не было или произошла другая ошибка
                            showMessage(data.message || 'Ошибка обработки крушения', true);
-                           // Состояние фронтенда уже false/idle, просто отображаем сообщение
                       }
                  } catch (error) {
                       console.error('Error reporting crash to backend:', error);
                       showMessage('Ошибка связи при крушении: ' + error.message, true);
-                      // При ошибке связи, возможно, нужно сбросить состояние фронтенда и синхронизироваться.
-                      gameState.isPlaying = false;
-                      gameState.game_state = 'idle'; // Или другое подходящее состояние
-                      gameState.currentBet = 0;
-                      updateControls(); // Обновляем кнопки
-                      elements.multiplier.textContent = '1.00x'; // Сброс множителя
                  }
             } else {
-                 // Крушение произошло, но у пользователя не было активной ставки на фронтенде.
-                 // Возможно, состояние уже было 'cashed_out' или 'idle'.
-                 // Бэкенд в /crash маршруте также это проверит.
-                 showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`); // Сообщение о крушении без привязки к проигрышу пользователя
-
+                 showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`);
             }
 
-            // В любом случае, после попытки обработки крушения, считаем раунд завершенным на фронтенде
-            // и запускаем синхронизацию состояния с бэкендом.
-            endGame(false); // Передаем false, так как это был проигрыш или неактивная ставка
+            endGame(false);
         }
 
-
-        // Настройка авто-вывода
         function toggleAutoCashout() {
-            // TODO: Вам нужно реализовать сохранение этого значения на бэкенде для пользователя
             if (gameState.autoCashout === 0) {
-                // Пример установки: запросить у пользователя или установить по умолчанию
                 const newAutoCashout = parseFloat(prompt("Введите множитель для авто-вывода (например, 2.0):"));
                 if (!isNaN(newAutoCashout) && newAutoCashout > 1.00) {
                     gameState.autoCashout = newAutoCashout;
@@ -777,11 +641,6 @@
                     elements.btnAuto.classList.add('btn-cashout');
                     elements.btnAuto.classList.remove('btn-auto');
                     showMessage(`Авто-вывод установлен на ${gameState.autoCashout.toFixed(2)}x`);
-                    // TODO: Отправить новое значение autoCashout на бэкенд и сохранить в БД для пользователя
-                    // Реализовать API endpoint /api/user/set_auto_cashout
-                    // async function saveAutoCashout(value) { ... fetch('/api/user/set_auto_cashout', ...) ... }
-                    // saveAutoCashout(newAutoCashout);
-
                 } else {
                     showMessage('Некорректное значение авто-вывода', true);
                 }
@@ -791,12 +650,9 @@
                 elements.btnAuto.classList.add('btn-auto');
                 elements.btnAuto.classList.remove('btn-cashout');
                 showMessage('Авто-вывод отключен');
-                // TODO: Отправить значение 0 для autoCashout на бэкенд и сохранить в БД
-                // saveAutoCashout(0);
             }
         }
 
-        // Создание эффекта взлета (вертикальные линии)
         function createFlightLines() {
             clearFlightLines();
 
@@ -806,192 +662,139 @@
                 for (let i = 0; i < lineCount; i++) {
                     const line = document.createElement('div');
                     line.className = 'flight-line';
-                    // Высота и длительность анимации могут зависеть от множителя или времени раунда
                     const duration = (Math.random() * 0.7) + 0.3;
-                    line.style.height = `${Math.floor(Math.random() * 30) + 10}px`; // Случайная высота
-                    // Позиционируем линии по всей ширине game-area
+                    line.style.height = `${Math.floor(Math.random() * 30) + 10}px`;
                     line.style.left = `${Math.floor(Math.random() * elements.gameArea.offsetWidth)}px`;
                     line.style.animationDuration = `${duration}s`;
 
                     elements.gameArea.appendChild(line);
 
-                    // Удаляем элемент линии после завершения анимации
                     setTimeout(() => {
                         if (line.parentNode) {
                             line.parentNode.removeChild(line);
                         }
                     }, duration * 1000);
                 }
-            }, 100); // Генерируем новые линии каждые 100ms
+            }, 100);
         }
 
-        // Очистка эффекта взлета
         function clearFlightLines() {
             clearInterval(gameState.flightLinesInterval);
-            gameState.flightLinesInterval = null; // Обнуляем, чтобы не было проблем с очисткой
+            gameState.flightLinesInterval = null;
             document.querySelectorAll('.flight-line').forEach(line => {
                 if (line.parentNode) line.parentNode.removeChild(line);
             });
         }
 
-        // Создание эффекта взрыва
         function createExplosion() {
             const explosion = document.createElement('div');
             explosion.className = 'explosion';
-            // Позиционируем взрыв рядом с самолетом в момент крушения
-            // Корректируем позицию, т.к. самолет может быть в анимации падения
             const airplaneRect = elements.airplane.getBoundingClientRect();
             const gameAreaRect = elements.gameArea.getBoundingClientRect();
-            const explosionX = airplaneRect.left - gameAreaRect.left + airplaneRect.width / 2 - 50; // 50 - половина ширины взрыва
-            const explosionY = airplaneRect.top - gameAreaRect.top + airplaneRect.height / 2 - 50; // 50 - половина высоты взрыва
+            const explosionX = airplaneRect.left - gameAreaRect.left + airplaneRect.width / 2 - 50;
+            const explosionY = airplaneRect.top - gameAreaRect.top + airplaneRect.height / 2 - 50;
 
             explosion.style.left = `${explosionX}px`;
             explosion.style.top = `${explosionY}px`;
 
             elements.gameArea.appendChild(explosion);
 
-            // Удаляем элемент взрыва после анимации
             setTimeout(() => {
                 if (explosion.parentNode) explosion.parentNode.removeChild(explosion);
             }, 500);
         }
 
-        // Начало игры (анимация и увеличение множителя)
         function startGame() {
-            // Сброс начальных параметров анимации
             gameState.multiplier = 1.0;
             elements.multiplier.textContent = '1.00x';
-            elements.airplane.style.bottom = '50px'; // Начальная позиция самолета
-            elements.airplane.classList.remove('crash'); // Убираем эффект крушения
+            elements.airplane.style.bottom = '50px';
+            elements.airplane.classList.remove('crash');
 
-            // Небольшая задержка перед стартом полета
             setTimeout(() => {
-                // Проверка, не отменил ли пользователь ставку или не завершился ли раунд до старта анимации
-                // Это локальная проверка. Бэкенд - главный источник истины.
                 if (!gameState.isPlaying || gameState.game_state !== 'bet_placed') {
                      console.warn("Game state changed before animation started. Aborting start.");
-                     // Если состояние изменилось, синхронизируемся с бэкендом
-                     loadUserData(); // Это вызовет updateControls и исправит состояние кнопок
-                     elements.multiplier.textContent = '1.00x'; // Сброс множителя на всякий случай
+                     elements.multiplier.textContent = '1.00x';
+                     updateControls();
                      return;
                 }
 
+                elements.airplane.style.bottom = 'calc(50% - 30px)';
+                createFlightLines();
 
-                elements.airplane.style.bottom = 'calc(50% - 30px)'; // Самолет занимает центральное положение
-                createFlightLines(); // Запускаем эффект вертикальных линий
-
-                // Запускаем интервал для увеличения множителя
                 gameState.interval = setInterval(() => {
-                    // Увеличиваем множитель
-                    // TODO: В идеале, множитель должен синхронизироваться с бэкендом, а не рассчитываться на фронтенде
                     gameState.multiplier = parseFloat((gameState.multiplier + 0.01).toFixed(2));
                     elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
 
-                    // Обновляем текст на кнопке "Забрать" во время полета, если есть активная ставка
                     if (gameState.isPlaying && gameState.currentBet > 0) {
                         elements.btnCashout.textContent = `ЗАБРАТЬ ${Math.floor(gameState.currentBet * gameState.multiplier)}₽`;
                     }
 
-                    // Проверка условия авто-вывода
                     if (gameState.autoCashout > 0 && gameState.multiplier >= gameState.autoCashout) {
-                        // Если множитель достиг или превысил авто-вывод И игра еще идет
                         if(gameState.isPlaying && gameState.game_state === 'bet_placed') {
-                             cashOut(); // Вызываем функцию вывода средств (она сама остановит интервал и запросит состояние)
+                             cashOut();
                         }
                     }
 
-                    // Проверка условия крушения
-                    // TODO: В идеале, крушение также должно сигнализироваться бэкендом
                     if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
-                         // Если множитель достиг или превысил точку крушения И игра еще идет
                          if(gameState.isPlaying && gameState.game_state === 'bet_placed') {
-                             // Самолет разбился для этого пользователя
-                             createExplosion(); // Показываем эффект взрыва
-                             elements.airplane.classList.add('crash'); // Запускаем анимацию падения самолета
+                             createExplosion();
+                             elements.airplane.classList.add('crash');
 
-                             // Небольшая задержка перед окончанием игры на фронтенде после анимации крушения
                              setTimeout(() => {
-                                 handleCrash(); // Обрабатываем крушение (уведомляем бэкенд и завершаем игру)
-                             }, 500); // Ждем немного, чтобы показать анимацию взрыва
+                                 handleCrash();
+                             }, 500);
                          } else {
-                             // Крушение произошло, но пользователь уже вывел или ставки не было
-                             // Просто показываем анимацию крушения, если она еще не идет
                              if(!elements.airplane.classList.contains('crash')) {
                                  createExplosion();
                                  elements.airplane.classList.add('crash');
-                                 showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`); // Просто сообщение о крушении
-                                 // Очищаем интервалы, если они еще активны
+                                 showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`);
                                  clearInterval(gameState.interval);
                                  clearFlightLines();
-                                 gameState.isPlaying = false; // Обновляем локальное состояние
-                                 // updateControls(); // updateControls вызовется в loadUserData после endGame
+                                 gameState.isPlaying = false;
+                                 updateControls();
                              }
-                             // В любом случае, после визуального крушения, если игра не была активна для пользователя,
-                             // нужно убедиться, что состояние синхронизировано.
-                             endGame(false); // Вызываем endGame для синхронизации состояния
                          }
                     }
-                }, 50); // Обновляем множитель каждые 50ms (20 раз в секунду)
-            }, 1000); // Задержка 1 секунда перед стартом полета после нажатия "Ставка"
+                }, 50);
+            }, 1000);
         }
 
-
-        // Добавление в историю (теперь история добавляется на бэкенде и загружается в loadUserData)
-        // Эта функция используется для отображения истории, полученной с бэкенда
         function displayHistory(historyData) {
             if (!historyData || !Array.isArray(historyData)) return;
 
-            elements.history.innerHTML = ''; // Очищаем текущую историю
-            // Добавляем элементы истории. Используем prepend для добавления в начало.
-            // Перебираем в обратном порядке, если хотим чтобы самые новые были справа при prepend
-            // бэкенд возвращает ORDER BY created_at DESC, так что самый новый в начале массива data.history
-            // Если мы добавляем в начало history.prepend(div), то в DOM они будут слева направо: Самый новый | Предыдущий | ...
-            // Если хотим справа налево (как часто бывает в истории): ... | Предыдущий | Самый новый
-            // то нужно либо реверсировать массив перед циклом, либо использовать appendChild
-            const historyItems = historyData; // Не реверсируем, если хотим новые слева
-            historyItems.forEach(item => {
+            elements.history.innerHTML = '';
+            historyData.forEach(item => {
                 const div = document.createElement('div');
-                div.className = `history-item ${item.result}`; // Используем класс 'win' или 'lose'
+                div.className = `history-item ${item.result}`;
                 div.textContent = `${item.multiplier.toFixed(2)}x`;
-                elements.history.appendChild(div); // Добавляем в конец
+                elements.history.appendChild(div);
             });
-            // Ограничиваем количество элементов истории в DOM
-            while (elements.history.children.length > 15) { // Увеличил лимит отображения
-                 elements.history.removeChild(elements.history.firstChild); // Удаляем из начала
+            while (elements.history.children.length > 15) {
+                 elements.history.removeChild(elements.history.firstChild);
             }
-             // Прокручиваем историю в конец, чтобы видеть последние результаты
              elements.history.scrollLeft = elements.history.scrollWidth;
-
         }
 
-
-        // Показать сообщение
         function showMessage(text, isError = false) {
-            // Убираем предыдущее сообщение, если оно есть
             const existingMessage = document.getElementById('message');
             if (existingMessage) {
                 existingMessage.classList.remove('show');
-                // Ждем окончания анимации скрытия перед показом нового
                 setTimeout(() => {
                     elements.message.textContent = text;
-                    elements.message.className = 'message'; // Сбрасываем классы
-                    if (isError) elements.message.classList.add('error'); // Добавляем класс ошибки, если нужно
-                    elements.message.classList.add('show'); // Показываем сообщение
+                    elements.message.className = 'message';
+                    if (isError) elements.message.classList.add('error');
+                    elements.message.classList.add('show');
 
-                    // Скрываем сообщение через 3 секунды
                     setTimeout(() => {
                         elements.message.classList.remove('show');
                     }, 3000);
-                }, 300); // Длительность анимации скрытия
+                }, 300);
             } else {
-                 // Если элемента сообщения еще нет (не должен быть null с id="message")
                  console.error("Message element not found!");
             }
         }
 
-        // Возврат на главную страницу
         function goBack() {
-            // Передаем параметры пользователя обратно на главную страницу
             const params = new URLSearchParams();
             params.append('user_id', userData.id);
             if (userData.first_name) params.append('first_name', userData.first_name);
@@ -1001,7 +804,38 @@
             window.location.href = `/?${params.toString()}`;
         }
 
-        // Инициализация при загрузке страницы
+        function updateBalance() {
+            elements.balance.textContent = gameState.balance.toFixed(2);
+        }
+
+        function updateControls() {
+            elements.btnBet.disabled = gameState.isPlaying;
+            elements.betAmount.disabled = gameState.isPlaying;
+            elements.btnCashout.disabled = !gameState.isPlaying;
+        }
+
+        function validateBet() {
+            const value = parseInt(elements.betAmount.value);
+            if (isNaN(value) || value < 10) {
+                elements.betAmount.value = 10;
+            }
+        }
+
+        function endGame(isWin) {
+            gameState.isPlaying = false;
+            gameState.currentBet = 0;
+            gameState.game_state = 'idle';
+            gameState.multiplier = 1.0;
+            
+            updateControls();
+            elements.multiplier.textContent = '1.00x';
+            elements.airplane.style.bottom = '50px';
+            elements.airplane.classList.remove('crash');
+            clearFlightLines();
+            elements.betAmount.disabled = false;
+            elements.betAmount.value = gameState.betAmount;
+        }
+
         document.addEventListener('DOMContentLoaded', initGame);
     </script>
 </body>
