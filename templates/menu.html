@@ -487,30 +487,25 @@
         // Навигация по играм
 // Навигация по играм
     function launchGame(game) {
-    // Создаем URLSearchParams для добавления параметров
+    // Проверяем доступные игры
+    const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
+    if (!availableGames.includes(game)) {
+        alert('Игра временно недоступна');
+        return;
+    }
+
+    // Формируем URL с параметрами
     const params = new URLSearchParams();
     params.append('user_id', CURRENT_USER.id);
     params.append('first_name', CURRENT_USER.first_name);
     if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
     if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
 
-    // Формируем URL в зависимости от игры
-    let gameUrl;
-    if (game === 'aviator') {
-        gameUrl = '/aviator?' + params.toString();
-    } else if (game === 'mines') {
-        gameUrl = '/mines?' + params.toString();
-    } else if (game === 'cubes') {
-        gameUrl = '/cubes?' + params.toString();
-    } else if (game === 'tower') {
-        gameUrl = '/tower?' + params.toString();
-    } else {
-        alert('Игра не найдена');
-        return;
-    }
-
-    // Перенаправляем
-    window.location.href = gameUrl;
+    // Перенаправляем на выбранную игру
+    window.location.href = `/${game}?${params.toString()}`;
+    
+    // Для отладки - выводим в консоль
+    console.log(`Переход на игру: /${game}?${params.toString()}`);
 }
         // Показать модальное окно пополнения
         function showDepositModal() {
