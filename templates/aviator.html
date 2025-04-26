@@ -372,7 +372,8 @@
             interval: null,
             currentBet: 0,
             flightLinesInterval: null,
-            game_state: 'idle'
+            game_state: 'idle',
+            crashHandled: false
         };
 
         const elements = {
@@ -530,6 +531,7 @@
                     gameState.isPlaying = true;
                     gameState.crashPoint = parseFloat(data.crash_point);
                     gameState.game_state = 'bet_placed';
+                    gameState.crashHandled = false;
 
                     updateBalance();
                     updateControls();
@@ -592,6 +594,8 @@
                        displayHistory(data.history);
                     }
 
+                    // Обновляем баланс на экране сразу после успешного кэшаута
+                    updateBalance();
                     endGame(true);
                 } else {
                     showMessage(data.message || 'Ошибка при выводе средств', true);
@@ -605,6 +609,9 @@
         }
 
         async function handleCrash() {
+            if (gameState.crashHandled) return;
+            gameState.crashHandled = true;
+            
             clearInterval(gameState.interval);
             clearFlightLines();
             gameState.isPlaying = false;
@@ -630,6 +637,8 @@
                            gameState.currentBet = 0;
                            gameState.game_state = data.game_state || 'idle';
                            showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`, true);
+                           // Обновляем баланс на экране сразу после крушения
+                           updateBalance();
                       } else {
                            showMessage(data.message || 'Ошибка обработки крушения', true);
                       }
@@ -721,6 +730,7 @@
 
         function startGame() {
             gameState.multiplier = 1.0;
+            gameState.crashHandled = false;
             elements.multiplier.textContent = '1.00x';
             elements.airplane.style.bottom = '50px';
             elements.airplane.classList.remove('crash');
@@ -751,23 +761,13 @@
                     }
 
                     if (gameState.multiplier >= parseFloat(gameState.crashPoint)) {
-                         if(gameState.isPlaying && gameState.game_state === 'bet_placed') {
+                         if(gameState.isPlaying && gameState.game_state === 'bet_placed' && !gameState.crashHandled) {
                              createExplosion();
                              elements.airplane.classList.add('crash');
 
                              setTimeout(() => {
                                  handleCrash();
                              }, 500);
-                         } else {
-                             if(!elements.airplane.classList.contains('crash')) {
-                                 createExplosion();
-                                 elements.airplane.classList.add('crash');
-                                 showMessage(`Самолет разбился! x${gameState.multiplier.toFixed(2)}`);
-                                 clearInterval(gameState.interval);
-                                 clearFlightLines();
-                                 gameState.isPlaying = false;
-                                 updateControls();
-                             }
                          }
                     }
                 }, 50);
@@ -841,6 +841,7 @@
             gameState.currentBet = 0;
             gameState.game_state = 'idle';
             gameState.multiplier = 1.0;
+            gameState.crashHandled = false;
             
             updateControls();
             elements.multiplier.textContent = '1.00x';
