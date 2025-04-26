@@ -129,6 +129,10 @@
         }
 
         .multiplier {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.5);
             padding: 10px 20px;
             border-radius: 20px;
@@ -282,18 +286,26 @@
             box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
         }
 
+        @keyframes flyDown {
+            0% { 
+                top: -50px; 
+                opacity: 0.5; 
+                height: 10px; 
+            }
+            100% { 
+                top: 100%; 
+                opacity: 0; 
+                height: 50px; 
+            }
+        }
+
         .flight-line {
             position: absolute;
-            bottom: 0;
+            top: 0;
             width: 1px;
             background: rgba(0, 245, 255, 0.7);
             z-index: 1;
-            animation: flyUp linear forwards;
-        }
-
-        @keyframes flyUp {
-            0% { bottom: 0; opacity: 0.5; height: 10px; }
-            100% { bottom: 100%; opacity: 0; height: 50px; }
+            animation: flyDown linear forwards;
         }
 
         .explosion {
@@ -655,20 +667,24 @@
 
         function createFlightLines() {
             clearFlightLines();
-
+            
             gameState.flightLinesInterval = setInterval(() => {
                 const lineCount = Math.floor(Math.random() * 6) + 3;
-
+                
                 for (let i = 0; i < lineCount; i++) {
                     const line = document.createElement('div');
                     line.className = 'flight-line';
+                    
+                    const height = Math.floor(Math.random() * 30) + 10;
+                    const left = Math.floor(Math.random() * elements.gameArea.offsetWidth);
                     const duration = (Math.random() * 0.7) + 0.3;
-                    line.style.height = `${Math.floor(Math.random() * 30) + 10}px`;
-                    line.style.left = `${Math.floor(Math.random() * elements.gameArea.offsetWidth)}px`;
+                    
+                    line.style.height = `${height}px`;
+                    line.style.left = `${left}px`;
                     line.style.animationDuration = `${duration}s`;
-
+                    
                     elements.gameArea.appendChild(line);
-
+                    
                     setTimeout(() => {
                         if (line.parentNode) {
                             line.parentNode.removeChild(line);
@@ -680,7 +696,6 @@
 
         function clearFlightLines() {
             clearInterval(gameState.flightLinesInterval);
-            gameState.flightLinesInterval = null;
             document.querySelectorAll('.flight-line').forEach(line => {
                 if (line.parentNode) line.parentNode.removeChild(line);
             });
