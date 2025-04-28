@@ -76,12 +76,24 @@
             white-space: nowrap;
         }
         
+        .balance-container {
+            display: flex;
+            align-items: center;
+        }
+        
         .balance {
             display: flex;
             align-items: center;
             gap: 6px;
             position: relative;
             z-index: 1;
+        }
+        
+        .balance-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 6px;
         }
         
         .user-avatar {
@@ -139,7 +151,6 @@
             font-size: 10px;
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
             white-space: nowrap;
-            margin-left: 4px;
         }
         
         .btn-success {
@@ -347,17 +358,21 @@
             <div>Рефералы</div>
             <div>Бонусы</div>
         </div>
-        <div class="balance">
-            <img src="{{ photo_url|default('/static/images/avatar.png') }}" alt="User Avatar" class="user-avatar" id="user-avatar">
-            <div class="balance-info">
-                <div class="balance-amount">
-                    <img src="/static/images/wallet.png">
-                    <span id="balance">0.00</span>
+        <div class="balance-container">
+            <div class="balance">
+                <img src="{{ photo_url|default('/static/images/avatar.png') }}" alt="User Avatar" class="user-avatar" id="user-avatar">
+                <div class="balance-info">
+                    <div class="balance-amount">
+                        <img src="/static/images/wallet.png">
+                        <span id="balance">0.00</span>
+                    </div>
+                    <div class="username" id="username">{{ first_name|default('Игрок') }}</div>
                 </div>
-                <div class="username" id="username">{{ first_name|default('Игрок') }}</div>
             </div>
-            <button class="btn btn-success" onclick="showDepositModal()">Пополнить</button>
-            <button class="btn btn-info" onclick="showWithdrawModal()">Вывести</button>
+            <div class="balance-buttons">
+                <button class="btn btn-success" onclick="showDepositModal()">Пополнить</button>
+                <button class="btn btn-info" onclick="showWithdrawModal()">Вывести</button>
+            </div>
         </div>
     </div>
 
@@ -485,28 +500,28 @@
         }
 
         // Навигация по играм
-// Навигация по играм
-function launchGame(game) {
-    // Проверяем доступные игры
-    const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
-    if (!availableGames.includes(game)) {
-        alert('Игра временно недоступна');
-        return;
-    }
+        function launchGame(game) {
+            // Проверяем доступные игры
+            const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
+            if (!availableGames.includes(game)) {
+                alert('Игра временно недоступна');
+                return;
+            }
 
-    // Создаем параметры URL
-    const params = new URLSearchParams();
-    params.append('user_id', CURRENT_USER.id);
-    params.append('first_name', CURRENT_USER.first_name);
-    if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
-    if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
+            // Создаем параметры URL
+            const params = new URLSearchParams();
+            params.append('user_id', CURRENT_USER.id);
+            params.append('first_name', CURRENT_USER.first_name);
+            if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
+            if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
 
-    // Перенаправляем на игру с параметрами
-    window.location.href = `/${game}?${params.toString()}`;
-    
-    // Для отладки
-    console.log(`Переход на игру: ${game}`, `Параметры: ${params.toString()}`);
-}
+            // Перенаправляем на игру с параметрами
+            window.location.href = `/${game}?${params.toString()}`;
+            
+            // Для отладки
+            console.log(`Переход на игру: ${game}`, `Параметры: ${params.toString()}`);
+        }
+
         // Показать модальное окно пополнения
         function showDepositModal() {
             document.getElementById('depositModal').style.display = 'block';
@@ -528,17 +543,17 @@ function launchGame(game) {
         }
 
         // Пополнение баланса
-function deposit() {
-    const amount = parseFloat(document.getElementById('depositAmount').value);
-    if (isNaN(amount)) { // <-- Добавлена закрывающая скобка
-        alert('Введите корректную сумму');
-        return;
-    }
+        function deposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            if (isNaN(amount)) {
+                alert('Введите корректную сумму');
+                return;
+            }
 
-    alert(`Пополнение на ${amount} монет успешно!`);
-    closeModal('depositModal');
-    document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
-}
+            alert(`Пополнение на ${amount} монет успешно!`);
+            closeModal('depositModal');
+            document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
+        }
 
         // Вывод средств
         function withdraw() {
