@@ -42,22 +42,6 @@
       align-items: center;
     }
 
-    .back-button {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-      margin-right: 10px;
-    }
-
-    .back-button:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
     .balance {
       background: var(--card-bg);
       padding: 10px 15px;
@@ -239,9 +223,8 @@
 <body>
 <div class="container">
   <div class="header">
-    <button class="back-button" id="btn-back">← Назад</button>
     <h1 style="margin: 0; font-size: 24px;">💣 Mines</h1>
-    <div class="balance">💰 <span id="balance">0</span>₽</div>
+    <div class="balance">💰 <span id="balance">1000</span>₽</div>
   </div>
 
   <div class="game-area">
@@ -255,7 +238,7 @@
 
     <div class="controls">
       <div class="bet-control">
-        <input type="number" id="bet-amount" min="10" value="10" placeholder="Ставка">
+        <input type="number" id="bet-amount" min="10" value="100" placeholder="Ставка">
         <select id="mines-count">
           <option value="3" selected>3 мины</option>
           <option value="5">5 мин</option>
@@ -276,23 +259,14 @@ const multipliersByMines = {
   7: [1.2, 1.6, 2.1, 3.0, 4.2, 6.0, 8.5, 12, 17, 23, 30, 38, 50]
 };
 
-const urlParams = new URLSearchParams(window.location.search);
-const userData = {
-  id: urlParams.get('user_id'),
-  first_name: urlParams.get('first_name') || 'Игрок',
-  username: urlParams.get('username') || '',
-  photo_id: urlParams.get('photo_id') || ''
-};
-
 const gameState = {
-  balance: 0,
-  betAmount: 10,
+  balance: 1000,
+  betAmount: 100,
   minesCount: 3,
   isPlaying: false,
   multiplier: 1.0,
   revealedCells: 0,
   minePositions: [],
-  game_state: 'idle'
 };
 
 const elements = {
@@ -303,151 +277,13 @@ const elements = {
   multiplier: document.getElementById('multiplier'),
   multipliersList: document.getElementById('multipliers-list'),
   minesGrid: document.getElementById('mines-grid'),
-  message: document.getElementById('message'),
-  btnBack: document.getElementById('btn-back')
+  message: document.getElementById('message')
 };
 
-async function initGame() {
-  await loadUserData();
+function initGame() {
   createGrid();
   updateMultipliersList();
   startNewRound();
-  
-  elements.btnBack.addEventListener('click', goBack);
-}
-
-async function loadUserData() {
-  try {
-    const response = await fetch('/api/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: userData
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.status === 'success') {
-      gameState.balance = parseFloat(data.user.balance);
-      updateUI();
-    }
-  } catch (error) {
-    console.error('Error loading user data:', error);
-    showMessage('Ошибка загрузки данных', true);
-  }
-}
-
-async function placeBet() {
-  if (gameState.isPlaying || gameState.game_state !== 'idle') {
-    showMessage('Игра уже начата', true);
-    return false;
-  }
-
-  const betAmount = parseInt(elements.betAmount.value);
-
-  if (isNaN(betAmount) || betAmount < 10) {
-    showMessage('Минимальная ставка 10₽', true);
-    return false;
-  }
-
-  if (betAmount > gameState.balance) {
-    showMessage('Недостаточно средств', true);
-    return false;
-  }
-
-  try {
-    const response = await fetch('/api/mines/bet', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: userData,
-        bet_amount: betAmount,
-        mines_count: gameState.minesCount
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.status === 'success') {
-      gameState.balance = parseFloat(data.balance);
-      gameState.betAmount = betAmount;
-      gameState.game_state = 'bet_placed';
-      updateUI();
-      return true;
-    } else {
-      showMessage(data.message || 'Ошибка при размещении ставки', true);
-      return false;
-    }
-  } catch (error) {
-    console.error('Error placing bet:', error);
-    showMessage('Ошибка соединения', true);
-    return false;
-  }
-}
-
-async function cashOut() {
-  if (!gameState.isPlaying || gameState.game_state !== 'bet_placed') {
-    showMessage('Нельзя забрать', true);
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/mines/cashout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: userData,
-        multiplier: gameState.multiplier
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.status === 'success') {
-      gameState.balance = parseFloat(data.balance);
-      gameState.game_state = 'idle';
-      const winAmount = Math.floor(gameState.betAmount * gameState.multiplier);
-      showMessage(`Вы выиграли ${winAmount}₽!`);
-      endRound(true);
-    } else {
-      showMessage(data.message || 'Ошибка при выводе средств', true);
-    }
-  } catch (error) {
-    console.error('Error cashing out:', error);
-    showMessage('Ошибка соединения', true);
-  }
-}
-
-async function reportLoss() {
-  try {
-    const response = await fetch('/api/mines/lose', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: userData,
-        multiplier: gameState.multiplier,
-        bet_amount: gameState.betAmount
-      })
-    });
-
-    const data = await response.json();
-    
-    if (data.status === 'success') {
-      gameState.balance = parseFloat(data.balance);
-      gameState.game_state = 'idle';
-    }
-  } catch (error) {
-    console.error('Error reporting loss:', error);
-  }
 }
 
 function createGrid() {
@@ -468,15 +304,12 @@ function updateMultipliersList() {
   multipliers.forEach((mult, index) => {
     const item = document.createElement('div');
     item.className = 'multiplier-item';
-    item.textContent = mult.toFixed(2) + 'x';
+    item.textContent = mult.toFixed(2) + 'x'; // Только число с множителем
     elements.multipliersList.appendChild(item);
   });
 }
 
-async function startNewRound() {
-  const canStart = await placeBet();
-  if (!canStart) return;
-
+function startNewRound() {
   gameState.isPlaying = true;
   gameState.multiplier = 1.0;
   gameState.revealedCells = 0;
@@ -496,7 +329,7 @@ function generateMines() {
   return positions;
 }
 
-async function handleCellClick(index) {
+function handleCellClick(index) {
   if (!gameState.isPlaying) return;
   const cell = elements.minesGrid.children[index];
 
@@ -504,7 +337,6 @@ async function handleCellClick(index) {
 
   if (gameState.minePositions.includes(index)) {
     cell.classList.add('mine');
-    await reportLoss();
     endRound(false);
   } else {
     cell.classList.add('safe');
@@ -534,6 +366,14 @@ function updateCurrentMultiplier() {
   elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
 }
 
+function cashOut() {
+  if (!gameState.isPlaying) return;
+  const winAmount = Math.floor(gameState.betAmount * gameState.multiplier);
+  gameState.balance += winAmount;
+  showMessage(`Вы выиграли ${winAmount}₽!`);
+  endRound(true);
+}
+
 function endRound(win) {
   gameState.isPlaying = false;
   gameState.minePositions.forEach(pos => {
@@ -541,6 +381,7 @@ function endRound(win) {
   });
 
   if (!win) {
+    gameState.balance -= gameState.betAmount;
     showMessage('Вы проиграли!', true);
   }
 
@@ -549,7 +390,7 @@ function endRound(win) {
 }
 
 function updateUI() {
-  elements.balance.textContent = gameState.balance.toFixed(2);
+  elements.balance.textContent = gameState.balance;
 }
 
 function showMessage(text, isError = false) {
@@ -560,16 +401,6 @@ function showMessage(text, isError = false) {
   setTimeout(() => {
     elements.message.classList.remove('show');
   }, 3000);
-}
-
-function goBack() {
-  const params = new URLSearchParams();
-  params.append('user_id', userData.id);
-  if (userData.first_name) params.append('first_name', userData.first_name);
-  if (userData.username) params.append('username', userData.username);
-  if (userData.photo_id) params.append('photo_id', userData.photo_id);
-
-  window.location.href = `/?${params.toString()}`;
 }
 
 elements.btnCashout.addEventListener('click', cashOut);
@@ -585,7 +416,7 @@ elements.minesCount.addEventListener('change', () => {
   startNewRound();
 });
 
-document.addEventListener('DOMContentLoaded', initGame);
+initGame();
 </script>
 </body>
 </html>
