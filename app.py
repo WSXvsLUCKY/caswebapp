@@ -304,7 +304,9 @@ def home():
                          username=user.username,
                          first_name=user.first_name,
                          photo_url=user.photo_url)
-
+@app.route('/mines')
+def mines():
+    return render_template('mines.html')
 @app.route('/aviator')
 def aviator():
     user_id = request.args.get('user_id', type=int)
