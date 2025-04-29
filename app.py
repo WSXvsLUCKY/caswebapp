@@ -575,7 +575,166 @@ def aviator_reset():
     finally:
         if connection:
             connection.close()
+# API для Mines
+@app.route('/api/mines/bet', methods=['POST'])
+def mines_bet():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
 
+    try:
+        data = request.get_json()
+        user_id = data.get('user', {}).get('id')
+        bet_amount = float(data.get('bet_amount', 0))
+        mines_count = int(data.get('mines_count', 3))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'idle':
+            return jsonify({'status': 'error', 'message': f'Game in progress. Current state: {user.game_state}'}), 400
+
+        if bet_amount < 10:
+            return jsonify({'status': 'error', 'message': 'Minimum bet is 10₽'}), 400
+
+        if user.balance < bet_amount:
+            return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
+
+        user.balance -= bet_amount
+        user.current_bet = bet_amount
+        user.game_state = 'bet_placed'
+
+        user.save_game_state(connection)
+
+        connection.commit()
+
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance,
+            'mines_count': mines_count
+        })
+    except Exception as e:
+        logger.error(f"API /api/mines/bet error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/mines/cashout', methods=['POST'])
+def mines_cashout():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user', {}).get('id')
+        multiplier = float(data.get('multiplier', 1.0))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'bet_placed' or user.current_bet <= 0:
+            return jsonify({'status': 'error', 'message': 'No active bet'}), 400
+
+        win_amount = int(user.current_bet * multiplier)
+        original_bet = float(user.current_bet)
+        
+        user.balance += win_amount
+        user.current_bet = 0.00
+        user.game_state = 'idle'
+        
+        user.save_game_state(connection)
+
+        history_data = {
+            'game': 'mines',
+            'bet_amount': original_bet,
+            'win_amount': win_amount,
+            'multiplier': multiplier,
+            'result': 'win'
+        }
+        user.add_to_history(history_data, connection)
+
+        connection.commit()
+
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance,
+            'profit': win_amount - original_bet,
+            'multiplier': multiplier,
+            'game_state': 'idle'
+        })
+    except Exception as e:
+        logger.error(f"API /api/mines/cashout error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/mines/lose', methods=['POST'])
+def mines_lose():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user', {}).get('id')
+        multiplier = float(data.get('multiplier', 1.0))
+        bet_amount = float(data.get('bet_amount', 0))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state == 'bet_placed' and user.current_bet > 0:
+            original_bet = float(user.current_bet)
+            user.current_bet = 0.00
+            user.game_state = 'idle'
+            
+            user.save_game_state(connection)
+
+            history_data = {
+                'game': 'mines',
+                'bet_amount': original_bet,
+                'win_amount': 0.00,
+                'multiplier': multiplier,
+                'result': 'lose'
+            }
+            user.add_to_history(history_data, connection)
+
+            connection.commit()
+
+            return jsonify({
+                'status': 'success',
+                'balance': user.balance,
+                'lost_amount': original_bet,
+                'game_state': 'idle'
+            })
+        else:
+            connection.rollback()
+            return jsonify({'status': 'success', 'message': 'No active bet to lose'}), 200
+
+    except Exception as e:
+        logger.error(f"API /api/mines/lose error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
