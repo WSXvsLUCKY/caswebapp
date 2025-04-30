@@ -1,3 +1,7 @@
+#================================================================#
+                        #Импорты
+#================================================================#
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import random
@@ -8,10 +12,13 @@ import os
 from datetime import datetime
 import requests 
 
+
+#===============================================================#
+                        # Конфигурация
+#===============================================================#
 app = Flask(__name__)
 CORS(app)
 
-# Конфигурация
 BOT_TOKEN = '7112560650:AAGGs3JMHouw2T5phdfrNZgaDZODxNHrtF0'
 POSTGRES_CONFIG = {
     'host': 'dpg-d058p7je5dus73cm4bqg-a.oregon-postgres.render.com',
@@ -21,17 +28,23 @@ POSTGRES_CONFIG = {
     'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
 }
 
-# Настройка логирования
+#===============================================================#
+                    # Настройка логирования
+#===============================================================#
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+#===============================================================#
+                    # Создание бд
+#===============================================================#
 def create_db_connection():
     """Создает соединение с PostgreSQL базой данных"""
     try:
         connection = psycopg2.connect(**POSTGRES_CONFIG)
         return connection
     except OperationalError as e:
-        logger.error(f"Error connecting to PostgreSQL: {e}")
+        logger.error(f"Ошибка подключение к PostgreSQL: {e}")
         return None
 
 def init_db():
@@ -43,7 +56,7 @@ def init_db():
     try:
         cursor = connection.cursor()
 
-        # Добавляем необходимые колонки если их нет
+        #Добавляем необходимые колонки если их нет
         cursor.execute("""
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS current_bet DECIMAL(15, 2) DEFAULT 0.00,
@@ -51,13 +64,13 @@ def init_db():
             ADD COLUMN IF NOT EXISTS photo_url VARCHAR(512);
         """)
 
-        # Создаем таблицу пользователей
+        #Создаем таблицу пользователей
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
             username VARCHAR(255),
             first_name VARCHAR(255),
-            balance DECIMAL(15, 2) DEFAULT 1000.00,
+            balance DECIMAL(15, 2) DEFAULT 0.00,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
             photo_url VARCHAR(512),
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
@@ -67,7 +80,7 @@ def init_db():
         )
         """)
 
-        # Создаем таблицу истории игр
+        #Создаем таблицу истории игр
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_history (
             id SERIAL PRIMARY KEY,
@@ -110,6 +123,9 @@ def init_db():
 
 # Инициализация базы данных при старте
 init_db()
+#===============================================================#
+                            #Класс юзера
+#===============================================================#
 
 class User:
     def __init__(self, user_data):
@@ -118,7 +134,7 @@ class User:
         self.first_name = user_data.get('first_name', 'User')
         self.photo_id = user_data.get('photo_id', '')
 
-        self.balance = 1000.00
+        self.balance = 0.00
         self.auto_cashout = 2.00
         self.current_bet = 0.00
         self.game_state = 'idle'
@@ -284,7 +300,9 @@ class User:
             if connection:
                 connection.close()
 
-# Маршруты
+#===============================================================#
+                    #МАШРУТЫ
+#===============================================================#
 @app.route('/')
 def home():
     user_id = request.args.get('user_id', type=int)
@@ -304,9 +322,7 @@ def home():
                          username=user.username,
                          first_name=user.first_name,
                          photo_url=user.photo_url)
-@app.route('/mines')
-def mines():
-    return render_template('mines.html')
+
 @app.route('/aviator')
 def aviator():
     user_id = request.args.get('user_id', type=int)
@@ -577,7 +593,223 @@ def aviator_reset():
     finally:
         if connection:
             connection.close()
+#===============================================================#
+                   # МИНЫ
+#===============================================================#
+@app.route('/mines')
+def mines():
+    user_id = request.args.get('user_id', type=int)
+    username = request.args.get('username', '')
+    first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
 
+    if not user_id:
+        logger.warning("User ID is missing or 0 in mines page URL.")
+        user_id = 0
 
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
+    user = User(temp_user_data)
+
+    return render_template('mines.html',
+                           user_id=user.user_id,
+                           username=user.username,
+                           first_name=user.first_name,
+                           photo_url=user.photo_url,
+                           initial_balance=user.balance)
+
+    return render_template('mines.html' )
+@app.route('/api/mines/bet', methods=['POST'])
+def mines_bet():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        bet_amount = float(data.get('bet_amount', 0))
+        mines_count = int(data.get('mines_count', 3))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'idle':
+            return jsonify({'status': 'error', 'message': f'Game in progress. Current state: {user.game_state}'}), 400
+
+        if bet_amount < 10:
+            return jsonify({'status': 'error', 'message': 'Minimum bet is 10₽'}), 400
+
+        if user.balance < bet_amount:
+            return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
+
+        user.balance -= bet_amount
+        user.current_bet = bet_amount
+        user.game_state = 'bet_placed_mines'
+        user.save_game_state(connection)
+
+        connection.commit()
+
+        return jsonify({'status': 'success', 'balance': user.balance})
+
+    except Exception as e:
+        logger.error(f"API /api/mines/bet error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/mines/reveal', methods=['POST'])
+def mines_reveal():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        index = int(data.get('index'))
+        mine_positions = data.get('minePositions') # Передавайте с фронтенда
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'bet_placed_mines':
+            return jsonify({'status': 'error', 'message': 'No active game'}), 400
+
+        is_mine = index in mine_positions
+
+        if is_mine:
+            user.game_state = 'lost_mines'
+            history_data = {
+                'game': 'mines',
+                'bet_amount': user.current_bet,
+                'win_amount': 0.00,
+                'multiplier': 0.00,
+                'result': 'lose'
+            }
+            user.add_to_history(history_data, connection)
+            user.current_bet = 0.00
+            user.save_game_state(connection)
+            connection.commit()
+            return jsonify({'status': 'mine', 'balance': user.balance})
+        else:
+            # Рассчитайте множитель на основе количества открытых ячеек (нужно реализовать логику)
+            revealed_count = int(data.get('revealedCells')) + 1
+            mines_count = int(data.get('minesCount'))
+            multiplier = calculate_mines_multiplier(revealed_count, mines_count) # Пример функции
+            return jsonify({'status': 'safe', 'multiplier': multiplier})
+
+    except Exception as e:
+        logger.error(f"API /api/mines/reveal error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+def calculate_mines_multiplier(revealed, total_mines):
+    # Реализуйте здесь логику расчета множителя в зависимости от количества мин и открытых ячеек
+    # Это примерная реализация, вам нужно адаптировать ее под вашу игру
+    multipliers_by_mines = {
+        3: [1.1, 1.3, 1.6, 2.0, 2.5, 3.2, 4.1, 5.3, 6.8, 8.6, 11, 14, 18],
+        5: [1.15, 1.4, 1.8, 2.4, 3.2, 4.5, 6, 8, 11, 15, 20, 27, 35],
+        7: [1.2, 1.6, 2.1, 3.0, 4.2, 6.0, 8.5, 12, 17, 23, 30, 38, 50]
+    }
+    if total_mines in multipliers_by_mines:
+        if revealed < len(multipliers_by_mines[total_mines]):
+            return multipliers_by_mines[total_mines][revealed]
+        elif len(multipliers_by_mines[total_mines]) > 0:
+            return multipliers_by_mines[total_mines][-1]
+    return 1.0
+
+@app.route('/api/mines/cashout', methods=['POST'])
+def mines_cashout():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        multiplier = float(data.get('multiplier', 1.0)) # Получайте текущий множитель с фронтенда
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'bet_placed_mines':
+            return jsonify({'status': 'error', 'message': 'No active game to cash out'}), 400
+
+        win_amount = user.current_bet * multiplier
+        original_bet = user.current_bet
+
+        user.balance += win_amount
+        user.current_bet = 0.00
+        user.game_state = 'idle'
+        user.save_game_state(connection)
+
+        history_data = {
+            'game': 'mines',
+            'bet_amount': original_bet,
+            'win_amount': win_amount,
+            'multiplier': multiplier,
+            'result': 'win'
+        }
+        user.add_to_history(history_data, connection)
+
+        connection.commit()
+
+        return jsonify({'status': 'success', 'balance': user.balance, 'win_amount': win_amount})
+
+    except Exception as e:
+        logger.error(f"API /api/mines/cashout error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/mines/reset', methods=['POST'])
+def mines_reset():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+        user.game_state = 'idle'
+        user.current_bet = 0.00
+        user.save_game_state(connection)
+        connection.commit()
+
+        return jsonify({'status': 'success', 'game_state': 'idle'})
+
+    except Exception as e:
+        logger.error(f"API /api/mines/reset error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
