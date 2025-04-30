@@ -39,6 +39,25 @@
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .balance {
@@ -171,14 +190,16 @@
       font-weight: bold;
       opacity: 0;
       transition: opacity 0.3s;
+      box-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
     }
 
-    .show {
+    .message.show {
       opacity: 1;
     }
 
-    .error {
+    .message.error {
       background: #d63031;
+      box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
     }
 
     .multiplier-display {
@@ -199,8 +220,9 @@
 <body>
   <div class="game-container">
     <div class="header">
+      <button class="back-btn" onclick="goBack()">← Назад</button>
       <h1 style="margin: 0; text-shadow: var(--text-glow);">💎 Royal Mines</h1>
-      <div class="balance">💰 <span id="balance">100</span>₽</div>
+      <div class="balance">💰 <span id="balance">{{ initial_balance }}</span>₽</div>
     </div>
 
     <div class="multiplier-display">
@@ -215,7 +237,7 @@
 
     <div class="controls">
       <div class="bet-control">
-        <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" />
+        <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10" />
         <button class="btn-bet" id="btn-bet">СТАВКА</button>
       </div>
       <button class="btn-cashout" id="btn-cashout" disabled>ЗАБРАТЬ</button>
@@ -226,7 +248,7 @@
 
   <script>
     const gameState = {
-      balance: 100,
+      balance: parseInt(document.getElementById('balance').textContent),
       betAmount: 10,
       isPlaying: false,
       multiplier: 1.0,
@@ -248,14 +270,42 @@
       rowNumber: document.getElementById("row-number")
     };
 
+    function getUserId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('user_id');
+    }
+
+    function getUserData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        id: urlParams.get('user_id'),
+        first_name: urlParams.get('first_name'),
+        username: urlParams.get('username'),
+        photo_id: urlParams.get('photo_id')
+      };
+    }
+
+    function goBack() {
+      const userData = getUserData();
+      const params = new URLSearchParams();
+      params.append('user_id', userData.id);
+      if (userData.first_name) params.append('first_name', userData.first_name);
+      if (userData.username) params.append('username', userData.username);
+      if (userData.photo_id) params.append('photo_id', userData.photo_id);
+
+      window.location.href = `/?${params.toString()}`;
+    }
+
     function updateBalance() {
       elements.balance.textContent = gameState.balance.toFixed(2);
     }
 
     function validateBet() {
       let bet = parseFloat(elements.betAmount.value);
-      if (isNaN(bet) || bet <= 0) bet = 1;
+      if (isNaN(bet) || bet <= 0) bet = 10;
+      if (bet < 10) bet = 10;
       if (bet > gameState.balance) bet = gameState.balance;
+      elements.betAmount.value = bet;
       gameState.betAmount = bet;
     }
 
@@ -292,23 +342,57 @@
 
     function startGame() {
       validateBet();
+      
+      if (gameState.betAmount < 10) {
+        showMessage("Минимальная ставка 10₽", true);
+        return;
+      }
+
       if (gameState.betAmount > gameState.balance) {
         showMessage("Недостаточно средств", true);
         return;
       }
 
-      gameState.balance -= gameState.betAmount;
-      gameState.isPlaying = true;
-      gameState.multiplier = 1.0;
-      gameState.currentRow = gameState.rows - 1;
-      gameState.gameEnded = false;
-      gameState.minePositions = Array.from({ length: gameState.rows }, () =>
-        Math.floor(Math.random() * gameState.cols)
-      );
+      const userId = getUserId();
+      
+      fetch('/api/tower/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: userId, 
+          bet_amount: gameState.betAmount,
+          rows: gameState.rows,
+          cols: gameState.cols
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status === 'success') {
+          gameState.balance = data.balance;
+          gameState.isPlaying = true;
+          gameState.multiplier = 1.0;
+          gameState.currentRow = gameState.rows - 1;
+          gameState.gameEnded = false;
+          gameState.minePositions = data.mines_positions;
 
-      createGameBoard();
-      enableRow(gameState.currentRow);
-      updateUI();
+          createGameBoard();
+          enableRow(gameState.currentRow);
+          updateUI();
+        } else {
+          showMessage(data.message || 'Ошибка при старте игры', true);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при старте игры:', error);
+        showMessage('Ошибка сервера', true);
+      });
     }
 
     function enableRow(rowIndex) {
@@ -327,37 +411,95 @@
       const isMine = gameState.minePositions[row] === col;
 
       cell.classList.add("revealed");
-      if (isMine) {
-        cell.classList.add("mine");
-        gameState.gameEnded = true;
-        showMessage("Вы проиграли!", true);
-        return;
-      }
+      cell.onclick = null; // Отключаем клик после выбора
 
-      cell.classList.add("gem");
-      gameState.multiplier += 0.25;
-      gameState.currentRow--;
+      const userId = getUserId();
+      
+      fetch('/api/tower/select_cell', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: userId,
+          row: row,
+          col: col,
+          mines_positions: gameState.minePositions,
+          current_multiplier: gameState.multiplier
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status === 'mine') {
+          cell.classList.add("mine");
+          gameState.balance = data.balance;
+          gameState.gameEnded = true;
+          showMessage("Вы проиграли!", true);
+          updateUI();
+        } else if (data.status === 'gem') {
+          cell.classList.add("gem");
+          gameState.multiplier = data.multiplier;
+          gameState.currentRow--;
 
-      if (gameState.currentRow < 0) {
-        showMessage("Вы прошли всю башню!", false);
-      const winnings = gameState.betAmount * gameState.multiplier;
-      gameState.balance += winnings;
-      showMessage(`Вы забрали ${winnings.toFixed(2)}₽`);
-        gameState.gameEnded = true;
-      } else {
-        enableRow(gameState.currentRow);
-      }
-
-      updateUI();
+          if (gameState.currentRow < 0) {
+            showMessage("Вы прошли всю башню!", false);
+            cashOut(true);
+          } else {
+            enableRow(gameState.currentRow);
+          }
+          updateUI();
+        } else {
+          showMessage(data.message || 'Ошибка при выборе ячейки', true);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при выборе ячейки:', error);
+        showMessage('Ошибка сервера', true);
+      });
     }
 
-    function cashOut() {
+    function cashOut(auto = false) {
       if (!gameState.isPlaying || gameState.gameEnded) return;
-      const winnings = gameState.betAmount * gameState.multiplier;
-      gameState.balance += winnings;
-      showMessage(`Вы забрали ${winnings.toFixed(2)}₽`);
-      gameState.gameEnded = true;
-      updateUI();
+      
+      const userId = getUserId();
+      
+      fetch('/api/tower/cash_out', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user_id: userId,
+          multiplier: gameState.multiplier
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status === 'success') {
+          gameState.balance = data.balance;
+          gameState.gameEnded = true;
+          if (!auto) {
+            showMessage(`Вы забрали ${data.win_amount.toFixed(2)}₽`);
+          }
+          updateUI();
+        } else {
+          showMessage(data.message || 'Ошибка при выводе средств', true);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при выводе средств:', error);
+        showMessage('Ошибка сервера', true);
+      });
     }
 
     function updateUI() {
@@ -366,11 +508,48 @@
       elements.btnCashout.disabled = !gameState.isPlaying || gameState.gameEnded;
     }
 
+    function resetGame() {
+      const userId = getUserId();
+      fetch('/api/tower/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: userId })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status !== 'success') {
+          console.error('Ошибка при сбросе игры:', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при сбросе игры:', error);
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       updateBalance();
       createGameBoard();
       elements.btnBet.onclick = startGame;
       elements.btnCashout.onclick = cashOut;
+      
+      // Проверяем состояние игры при загрузке
+      const userId = getUserId();
+      if (userId) {
+        fetch('/api/tower/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: userId })
+        });
+      }
     });
   </script>
 </body>
