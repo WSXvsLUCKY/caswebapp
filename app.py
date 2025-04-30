@@ -820,7 +820,7 @@ def mines_reset():
         if connection:
             connection.close()
 #===============================================================#
-                        #КУБЫ
+                    #КУБЫ
 #===============================================================#
 @app.route('/cubes')
 def kub():
@@ -844,7 +844,7 @@ def kub():
                            initial_balance=user.balance)
 
 @app.route('/api/cubes/bet', methods=['POST'])
-def cube_bet():
+def kub_bet():
     connection = create_db_connection()
     if not connection:
         return jsonify({'status': 'error', 'message': 'Database error'}), 500
@@ -854,8 +854,7 @@ def cube_bet():
         data = request.get_json()
         user_id = data.get('user_id')
         bet_amount = float(data.get('bet_amount', 0))
-        bet_type = data.get('bet_type')
-        bet_value = data.get('bet_value')
+        selected_bet = data.get('selectedBet')
 
         if not user_id:
             return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
@@ -871,16 +870,12 @@ def cube_bet():
         if user.balance < bet_amount:
             return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
 
-        if not bet_type:
+        if not selected_bet:
             return jsonify({'status': 'error', 'message': 'Select a bet type'}), 400
 
         user.balance -= bet_amount
         user.current_bet = bet_amount
-        user.game_state = 'bet_placed_cube'
-        user.game_data = {
-            'bet_type': bet_type,
-            'bet_value': bet_value
-        }
+        user.game_state = 'bet_placed_kub'
         user.save_game_state(connection)
 
         connection.commit()
@@ -897,7 +892,7 @@ def cube_bet():
             connection.close()
 
 @app.route('/api/cubes/roll', methods=['POST'])
-def cube_roll():
+def kub_roll():
     connection = create_db_connection()
     if not connection:
         return jsonify({'status': 'error', 'message': 'Database error'}), 500
@@ -906,48 +901,47 @@ def cube_roll():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
+        selected_bet = data.get('selectedBet')
 
         if not user_id:
             return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
 
         user = User({'id': user_id})
 
-        if user.game_state != 'bet_placed_cube':
+        if user.game_state != 'bet_placed_kub':
             return jsonify({'status': 'error', 'message': 'No active bet'}), 400
 
         dice_value = random.randint(1, 6)
         win = False
         multiplier = 0
-        bet_type = user.game_data.get('bet_type')
-        bet_value = user.game_data.get('bet_value')
 
-        # Проверка выигрыша по типам ставок
-        if bet_type == 'number' and dice_value == int(bet_value):
+        if selected_bet == 'even' and dice_value % 2 == 0:
+            win = True
+            multiplier = 2
+        elif selected_bet == 'odd' and dice_value % 2 != 0:
+            win = True
+            multiplier = 2
+        elif selected_bet == 'less' and dice_value < 4:
+            win = True
+            multiplier = 1.5
+        elif selected_bet == 'more' and dice_value > 3:
+            win = True
+            multiplier = 1.5
+        elif selected_bet == 'duel1-3' and (dice_value == 1 or dice_value == 3):
+            win = True
+            multiplier = 3
+        elif selected_bet == 'duel2-4' and (dice_value == 2 or dice_value == 4):
+            win = True
+            multiplier = 3
+        elif selected_bet == 'duel5-6' and (dice_value == 5 or dice_value == 6):
+            win = True
+            multiplier = 3
+        elif selected_bet == 'exact1' and dice_value == 1:
             win = True
             multiplier = 6
-        elif bet_type == 'even_odd':
-            if (bet_value == 'even' and dice_value % 2 == 0) or (bet_value == 'odd' and dice_value % 2 != 0):
-                win = True
-                multiplier = 2
-        elif bet_type == 'high_low':
-            if (bet_value == 'low' and dice_value < 4) or (bet_value == 'high' and dice_value > 3):
-                win = True
-                multiplier = 2
-        elif bet_type == 'range':
-            ranges = {
-                '1-2': [1, 2],
-                '3-4': [3, 4],
-                '5-6': [5, 6]
-            }
-            if dice_value in ranges.get(bet_value, []):
-                win = True
-                multiplier = 3
-        elif bet_type == 'jackpot':
-            last_value = user.game_data.get('last_dice_value')
-            if last_value and last_value == int(bet_value) and dice_value == int(bet_value):
-                win = True
-                multiplier = 20
-            user.game_data['last_dice_value'] = dice_value
+        elif selected_bet == 'exact6' and dice_value == 6:
+            win = True
+            multiplier = 6
 
         win_amount = 0
         original_bet = float(user.current_bet)
@@ -956,7 +950,7 @@ def cube_roll():
             win_amount = original_bet * multiplier
             user.balance += win_amount
             history_data = {
-                'game': 'cube',
+                'game': 'kub',
                 'bet_amount': original_bet,
                 'win_amount': win_amount,
                 'multiplier': multiplier,
@@ -965,7 +959,7 @@ def cube_roll():
             user.add_to_history(history_data, connection)
         else:
             history_data = {
-                'game': 'cube',
+                'game': 'kub',
                 'bet_amount': original_bet,
                 'win_amount': 0.00,
                 'multiplier': 0.00,
@@ -984,8 +978,7 @@ def cube_roll():
             'balance': user.balance,
             'dice_value': dice_value,
             'win': win,
-            'win_amount': win_amount,
-            'multiplier': multiplier
+            'win_amount': win_amount
         })
 
     except Exception as e:
@@ -998,7 +991,7 @@ def cube_roll():
             connection.close()
 
 @app.route('/api/cubes/reset', methods=['POST'])
-def cube_reset():
+def kub_reset():
     connection = create_db_connection()
     if not connection:
         return jsonify({'status': 'error', 'message': 'Database error'}), 500
@@ -1016,7 +1009,7 @@ def cube_reset():
         connection.commit()
         return jsonify({'status': 'success', 'game_state': 'idle'})
     except Exception as e:
-        logger.error(f"API /api/cube/reset error: {str(e)}")
+        logger.error(f"API /api/cubes/reset error: {str(e)}")
         if connection:
             connection.rollback()
         return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
