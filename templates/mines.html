@@ -83,12 +83,18 @@
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 12px;
+            transition: all 0.3s;
         }
 
         .multiplier-item.current {
             background: var(--accent);
             color: #000;
             font-weight: bold;
+        }
+
+        .multiplier-item.next {
+            background: rgba(0, 245, 255, 0.3);
+            border: 1px solid var(--accent);
         }
 
         .mines-grid {
@@ -175,6 +181,12 @@
             color: white;
         }
 
+        .btn-back {
+            background: var(--secondary);
+            color: white;
+            margin-bottom: 10px;
+        }
+
         .message {
             position: fixed;
             top: 20px;
@@ -222,6 +234,8 @@
 </head>
 <body>
 <div class="container">
+    <button class="btn-back" id="btn-back">← Назад</button>
+    
     <div class="header">
         <h1 style="margin: 0; font-size: 24px;">💣 Mines</h1>
         <div class="balance">💰 <span id="balance">{{ initial_balance }}</span>₽</div>
@@ -268,6 +282,7 @@ const gameState = {
     multiplier: 1.0,
     revealedCells: 0,
     minePositions: [],
+    lastRevealTime: 0
 };
 
 const elements = {
@@ -276,6 +291,7 @@ const elements = {
     minesCount: document.getElementById('mines-count'),
     btnStart: document.getElementById('btn-start'),
     btnCashout: document.getElementById('btn-cashout'),
+    btnBack: document.getElementById('btn-back'),
     multiplier: document.getElementById('multiplier'),
     multipliersList: document.getElementById('multipliers-list'),
     minesGrid: document.getElementById('mines-grid'),
@@ -283,9 +299,29 @@ const elements = {
 };
 
 function getUserId() {
-    // Предполагается, что user_id передается как параметр URL
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('user_id');
+}
+
+function getUserData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+        id: urlParams.get('user_id'),
+        first_name: urlParams.get('first_name'),
+        username: urlParams.get('username'),
+        photo_id: urlParams.get('photo_id')
+    };
+}
+
+function goBack() {
+    const userData = getUserData();
+    const params = new URLSearchParams();
+    params.append('user_id', userData.id);
+    if (userData.first_name) params.append('first_name', userData.first_name);
+    if (userData.username) params.append('username', userData.username);
+    if (userData.photo_id) params.append('photo_id', userData.photo_id);
+
+    window.location.href = `/?${params.toString()}`;
 }
 
 function initGame() {
@@ -316,13 +352,26 @@ function updateMultipliersList() {
     });
 }
 
+function highlightNextMultiplier() {
+    const items = elements.multipliersList.querySelectorAll('.multiplier-item');
+    items.forEach(item => item.classList.remove('next'));
+    
+    if (gameState.revealedCells < items.length) {
+        items[gameState.revealedCells].classList.add('next');
+    }
+}
+
 function startGame() {
     const betAmount = parseInt(elements.betAmount.value);
     const minesCount = parseInt(elements.minesCount.value);
     const userId = getUserId();
 
-    if (isNaN(betAmount) || betAmount < 10) {
-        showMessage('Введите корректную ставку (минимум 10₽)', true);
+    if (isNaN(betAmount)) {
+        showMessage('Введите корректную ставку', true);
+        return;
+    }
+    if (betAmount < 10) {
+        showMessage('Минимальная ставка 10₽', true);
         return;
     }
     if (betAmount > gameState.balance) {
@@ -342,6 +391,7 @@ function startGame() {
         if (data.status === 'success') {
             gameState.balance = data.balance;
             elements.balance.textContent = gameState.balance;
+            showMessage('Ставка принята!');
             startNewRound();
         } else {
             showMessage(data.message, true);
@@ -358,12 +408,15 @@ function startNewRound() {
     gameState.multiplier = 1.0;
     gameState.revealedCells = 0;
     gameState.minePositions = generateMines(parseInt(elements.minesCount.value));
+    gameState.lastRevealTime = 0;
+    
     document.querySelectorAll('.cell').forEach(cell => {
         cell.className = 'cell';
         cell.textContent = '';
     });
     updateUI();
     updateCurrentMultiplier();
+    highlightNextMultiplier();
 }
 
 function generateMines(count) {
@@ -377,13 +430,33 @@ function generateMines(count) {
 
 function handleCellClick(index) {
     if (!gameState.isPlaying) return;
+    
+    // Защита от слишком частых кликов
+    const now = Date.now();
+    if (now - gameState.lastRevealTime < 300) return;
+    gameState.lastRevealTime = now;
+    
     const cell = elements.minesGrid.children[index];
 
     if (cell.classList.contains('safe') || cell.classList.contains('mine')) return;
 
+    if (gameState.minePositions.includes(index)) {
+        cell.classList.add('mine');
+        cell.textContent = '💣';
+        endRound(false);
+        return;
+    }
+
+    // Локальная обработка безопасной ячейки
+    cell.classList.add('safe');
+    gameState.revealedCells++;
+    updateCurrentMultiplier();
+    highlightNextMultiplier();
+    
+    // Отправка данных на сервер
     const userId = getUserId();
     const minesCount = parseInt(elements.minesCount.value);
-
+    
     fetch('/api/mines/reveal', {
         method: 'POST',
         headers: {
@@ -399,21 +472,12 @@ function handleCellClick(index) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'mine') {
-            cell.classList.add('mine');
-            cell.textContent = '💣';
-            endRound(false);
-        } else if (data.status === 'safe') {
-            cell.classList.add('safe');
-            gameState.revealedCells++;
-            updateCurrentMultiplier(data.multiplier);
-        } else {
+        if (data.status === 'error') {
             showMessage(data.message, true);
         }
     })
     .catch(error => {
         console.error('Ошибка при открытии ячейки:', error);
-        showMessage('Ошибка сервера', true);
     });
 }
 
@@ -476,7 +540,8 @@ function resetGame() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            startNewRound();
+            gameState.balance = data.balance;
+            elements.balance.textContent = gameState.balance;
         } else {
             console.error('Ошибка при сбросе игры:', data.message);
         }
@@ -500,15 +565,13 @@ function showMessage(text, isError = false) {
     }, 3000);
 }
 
-function updateCurrentMultiplier(multiplier = null) {
+function updateCurrentMultiplier() {
     const multipliers = multipliersByMines[gameState.minesCount] || multipliersByMines[3];
     const items = elements.multipliersList.querySelectorAll('.multiplier-item');
 
     items.forEach(item => item.classList.remove('current'));
 
-    if (multiplier !== null) {
-        gameState.multiplier = multiplier;
-    } else if (gameState.revealedCells >= multipliers.length) {
+    if (gameState.revealedCells >= multipliers.length) {
         gameState.multiplier = multipliers[multipliers.length - 1];
         if (items.length > 0) {
             items[items.length - 1].classList.add('current');
@@ -523,8 +586,10 @@ function updateCurrentMultiplier(multiplier = null) {
     elements.multiplier.textContent = gameState.multiplier.toFixed(2) + 'x';
 }
 
+// Инициализация событий
 elements.btnStart.addEventListener('click', startGame);
 elements.btnCashout.addEventListener('click', cashOut);
+elements.btnBack.addEventListener('click', goBack);
 elements.betAmount.addEventListener('input', () => {
     const value = parseInt(elements.betAmount.value) || 0;
     if (value < 10) elements.betAmount.value = 10;
@@ -534,6 +599,9 @@ elements.betAmount.addEventListener('input', () => {
 elements.minesCount.addEventListener('change', () => {
     gameState.minesCount = parseInt(elements.minesCount.value);
     updateMultipliersList();
+    if (gameState.isPlaying) {
+        highlightNextMultiplier();
+    }
 });
 
 initGame();
