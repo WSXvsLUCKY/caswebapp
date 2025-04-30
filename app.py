@@ -819,9 +819,11 @@ def mines_reset():
     finally:
         if connection:
             connection.close()
+
 #===============================================================#
-                    #КУБЫ
+                    # КУБЫ
 #===============================================================#
+
 @app.route('/cubes')
 def kub():
     user_id = request.args.get('user_id', type=int)
@@ -1016,6 +1018,215 @@ def kub_reset():
     finally:
         if connection:
             connection.close()
+#===============================================================#
+                # БАШНЯ
+#===============================================================#
+
+@app.route('/tower')
+def tower():
+    user_id = request.args.get('user_id', type=int)
+    username = request.args.get('username', '')
+    first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
+
+    if not user_id:
+        logger.warning("User ID is missing or 0 in tower page URL.")
+        user_id = 0
+
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
+    user = User(temp_user_data)
+
+    return render_template('tower.html',
+                           user_id=user.user_id,
+                           username=user.username,
+                           first_name=user.first_name,
+                           photo_url=user.photo_url,
+                           initial_balance=user.balance)
+
+@app.route('/api/tower/start', methods=['POST'])
+def tower_start():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        bet_amount = float(data.get('bet_amount', 0))
+        rows = int(data.get('rows', 6))
+        cols = int(data.get('cols', 3))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'idle':
+            return jsonify({'status': 'error', 'message': f'Game in progress. Current state: {user.game_state}'}), 400
+
+        if bet_amount < 10:
+            return jsonify({'status': 'error', 'message': 'Minimum bet is 10₽'}), 400
+
+        if user.balance < bet_amount:
+            return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
+
+        user.balance -= bet_amount
+        user.current_bet = bet_amount
+        user.game_state = 'playing_tower'
+        user.save_game_state(connection)
+
+        mines_positions = [random.randint(0, cols - 1) for _ in range(rows)]
+
+        connection.commit()
+
+        return jsonify({
+            'status': 'success',
+            'balance': user.balance,
+            'rows': rows,
+            'cols': cols,
+            'mines_positions': mines_positions
+        })
+
+    except Exception as e:
+        logger.error(f"API /api/tower/start error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/tower/select_cell', methods=['POST'])
+def tower_select_cell():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        row = int(data.get('row'))
+        col = int(data.get('col'))
+        mines_positions = data.get('mines_positions')
+        current_multiplier = float(data.get('current_multiplier'))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'playing_tower':
+            return jsonify({'status': 'error', 'message': 'No active game'}), 400
+
+        is_mine = mines_positions[row] == col
+        multiplier_increase = 0.25
+
+        if is_mine:
+            user.game_state = 'idle'
+            history_data = {
+                'game': 'tower',
+                'bet_amount': user.current_bet,
+                'win_amount': 0.00,
+                'multiplier': current_multiplier,
+                'result': 'lose'
+            }
+            user.add_to_history(history_data, connection)
+            user.current_bet = 0.00
+            user.save_game_state(connection)
+            connection.commit()
+            return jsonify({'status': 'mine', 'balance': user.balance})
+        else:
+            multiplier = current_multiplier + multiplier_increase
+            return jsonify({'status': 'gem', 'multiplier': multiplier})
+
+    except Exception as e:
+        logger.error(f"API /api/tower/select_cell error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/tower/cash_out', methods=['POST'])
+def tower_cash_out():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        multiplier = float(data.get('multiplier', 1.0))
+
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+
+        if user.game_state != 'playing_tower':
+            return jsonify({'status': 'error', 'message': 'No active game to cash out'}), 400
+
+        win_amount = user.current_bet * multiplier
+        original_bet = user.current_bet
+
+        user.balance += win_amount
+        user.current_bet = 0.00
+        user.game_state = 'idle'
+        user.save_game_state(connection)
+
+        history_data = {
+            'game': 'tower',
+            'bet_amount': original_bet,
+            'win_amount': win_amount,
+            'multiplier': multiplier,
+            'result': 'win'
+        }
+        user.add_to_history(history_data, connection)
+
+        connection.commit()
+
+        return jsonify({'status': 'success', 'balance': user.balance, 'win_amount': win_amount})
+
+    except Exception as e:
+        logger.error(f"API /api/tower/cash_out error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
+@app.route('/api/tower/reset', methods=['POST'])
+def tower_reset():
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'status': 'error', 'message': 'Database error'}), 500
+    connection.autocommit = False
+
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+        user = User({'id': user_id})
+        user.game_state = 'idle'
+        user.current_bet = 0.00
+        user.save_game_state(connection)
+        connection.commit()
+        return jsonify({'status': 'success', 'game_state': 'idle'})
+    except Exception as e:
+        logger.error(f"API /api/tower/reset error: {str(e)}")
+        if connection:
+            connection.rollback()
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    finally:
+        if connection:
+            connection.close()
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
