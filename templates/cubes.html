@@ -3,93 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 Игра в Куб</title>
+    <title>Куб</title>
     <style>
+        /* Стили остаются прежними */
         :root {
             --main-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             --card-bg: rgba(30, 30, 60, 0.7);
             --primary: #6a11cb;
             --secondary: #2575fc;
             --accent: #00f5ff;
-            --win: #00b894;
-            --lose: #ff6b6b;
             --text-glow: 0 0 10px rgba(0, 245, 255, 0.7);
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             background: var(--main-gradient);
             color: white;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             height: 100vh;
         }
 
-        .container {
+        .game-container {
             max-width: 500px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .btn-back {
-            background: var(--secondary);
-            color: white;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            width: 100%;
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
         }
 
         .balance {
-            background: var(--card-bg);
+            background: rgba(0, 184, 148, 0.15);
             padding: 10px 15px;
             border-radius: 10px;
             font-weight: bold;
             border: 1px solid var(--accent);
         }
 
-        .game-area {
-            flex: 1;
+        .bet-control {
             display: flex;
             flex-direction: column;
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
-        .dice-container {
+        input {
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .game-area {
+            height: 200px;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 150px;
-            margin: 20px 0;
+            margin-bottom: 20px;
+            position: relative;
         }
 
         .dice {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 40px;
+            font-size: 50px;
             color: #1a1a2e;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            transition: transform 0.5s;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            transform-style: preserve-3d;
+            transition: transform 1s;
+            margin-bottom: 30px;
         }
 
         .dice.rolling {
@@ -101,133 +98,19 @@
             100% { transform: rotateX(720deg) rotateY(720deg); }
         }
 
-        .bet-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .bet-amount {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .bet-amount input {
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-        }
-
-        .bet-types {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .bet-type {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-        }
-
-        .bet-type:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .bet-type.active {
-            background: var(--primary);
-            border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(106, 17, 203, 0.5);
-        }
-
-        .bet-options {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .bet-options.visible {
-            display: grid;
-        }
-
-        .bet-option {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 5px;
-            padding: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .bet-option:hover {
-            background: rgba(0, 245, 255, 0.2);
-        }
-
-        .bet-option.active {
-            background: var(--accent);
-            color: #000;
-            font-weight: bold;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s;
-        }
-
-        .btn-bet {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-        }
-
-        .btn-bet:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn-bet:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .selected-bet {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            background: rgba(0, 245, 255, 0.1);
-            border: 1px solid var(--accent);
-            text-align: center;
-        }
-
         .result {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
             font-weight: bold;
+            color: var(--accent);
+            text-shadow: var(--text-glow);
+            border: 1px solid var(--accent);
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -237,13 +120,96 @@
         }
 
         .win {
-            background: rgba(0, 184, 148, 0.2);
-            color: var(--win);
+            color: #55efc4;
         }
 
         .lose {
-            background: rgba(255, 107, 107, 0.2);
-            color: var(--lose);
+            color: #ff7675;
+        }
+
+        .bet-selector {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .bet-toggle {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+        }
+
+        .bet-toggle:after {
+            content: "▼";
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+
+        .bet-toggle.open:after {
+            transform: rotate(180deg);
+        }
+
+        .bet-options {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        .bet-options.visible {
+            display: grid;
+        }
+
+        .bet-option {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .bet-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .bet-option.active {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+        }
+
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-bet {
+            width: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+            font-size: 16px;
+        }
+
+        .btn-bet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(37, 117, 252, 0.7);
         }
 
         .message {
@@ -251,145 +217,102 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 8px;
-            background: var(--win);
+            padding: 15px 25px;
+            border-radius: 10px;
+            background: #00b894;
             color: white;
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.3s;
-            z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 184, 148, 0.5);
         }
 
-        .message.show {
+        .show {
             opacity: 1;
         }
 
-        .message.error {
-            background: var(--lose);
+        .error {
+            background: #d63031;
+            box-shadow: 0 0 20px rgba(214, 48, 49, 0.5);
         }
 
-        .multiplier-info {
-            margin-top: 5px;
-            font-size: 12px;
-            color: var(--accent);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .selected-bet {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--accent);
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+
+        .selected-bet.visible {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="btn-back" id="btn-back">← Назад</button>
-        
+    <div class="game-container">
         <div class="header">
-            <h1 style="margin: 0;">🎲 Игра в Куб</h1>
+            <h1 style="margin: 0; text-shadow: var(--text-glow);">🎲 Куб</h1>
             <div class="balance">💰 <span id="balance">{{ initial_balance }}</span>₽</div>
         </div>
 
         <div class="game-area">
-            <div class="dice-container">
-                <div class="dice" id="dice">?</div>
-            </div>
-
+            <div class="dice" id="dice">?</div>
             <div class="result" id="result"></div>
+        </div>
 
-            <div class="bet-controls">
-                <div class="bet-amount">
-                    <input type="number" id="bet-amount" min="10" value="100" placeholder="Сумма ставки">
-                </div>
+        <div class="bet-control">
+            <input type="number" id="bet-amount" value="10" placeholder="Сумма ставки" min="10">
+        </div>
 
-                <div class="bet-types">
-                    <div class="bet-type" data-type="number">
-                        🔢 На число
-                        <div class="multiplier-info">Выигрыш x6</div>
-                    </div>
-                    <div class="bet-type" data-type="even_odd">
-                        🔴 Чет/Нечет
-                        <div class="multiplier-info">Выигрыш x2</div>
-                    </div>
-                    <div class="bet-type" data-type="high_low">
-                        ⬆️ Больше/Меньше
-                        <div class="multiplier-info">Выигрыш x2</div>
-                    </div>
-                    <div class="bet-type" data-type="range">
-                        🎯 Диапазон
-                        <div class="multiplier-info">Выигрыш x3</div>
-                    </div>
-                    <div class="bet-type" data-type="jackpot">
-                        💥 Джекпот
-                        <div class="multiplier-info">Выигрыш x20</div>
-                    </div>
-                </div>
-
-                <div class="bet-options" id="number-options">
-                    <div class="bet-option" data-value="1">1</div>
-                    <div class="bet-option" data-value="2">2</div>
-                    <div class="bet-option" data-value="3">3</div>
-                    <div class="bet-option" data-value="4">4</div>
-                    <div class="bet-option" data-value="5">5</div>
-                    <div class="bet-option" data-value="6">6</div>
-                </div>
-
-                <div class="bet-options" id="even_odd-options">
-                    <div class="bet-option" data-value="even">Чет (2,4,6)</div>
-                    <div class="bet-option" data-value="odd">Нечет (1,3,5)</div>
-                </div>
-
-                <div class="bet-options" id="high_low-options">
-                    <div class="bet-option" data-value="high">Больше 3 (4-6)</div>
-                    <div class="bet-option" data-value="low">Меньше 4 (1-3)</div>
-                </div>
-
-                <div class="bet-options" id="range-options">
-                    <div class="bet-option" data-value="1-2">1-2</div>
-                    <div class="bet-option" data-value="3-4">3-4</div>
-                    <div class="bet-option" data-value="5-6">5-6</div>
-                </div>
-
-                <div class="bet-options" id="jackpot-options">
-                    <div class="bet-option" data-value="1">1</div>
-                    <div class="bet-option" data-value="2">2</div>
-                    <div class="bet-option" data-value="3">3</div>
-                    <div class="bet-option" data-value="4">4</div>
-                    <div class="bet-option" data-value="5">5</div>
-                    <div class="bet-option" data-value="6">6</div>
-                </div>
-
-                <div class="selected-bet" id="selected-bet">Выберите тип ставки и значение</div>
-            </div>
-
-            <div class="action-buttons">
-                <button class="btn btn-bet" id="btn-bet">Сделать ставку</button>
+        <div class="bet-selector">
+            <button class="bet-toggle" id="bet-toggle">Выбрать тип ставки</button>
+            <div class="selected-bet" id="selected-bet"></div>
+            <div class="bet-options" id="bet-options">
+                <div class="bet-option" data-bet="even">Чёт</div>
+                <div class="bet-option" data-bet="odd">Нечёт</div>
+                <div class="bet-option" data-bet="less">Меньше 4</div>
+                <div class="bet-option" data-bet="more">Больше 3</div>
+                <div class="bet-option" data-bet="duel1-3">1 или 3</div>
+                <div class="bet-option" data-bet="duel2-4">2 или 4</div>
+                <div class="bet-option" data-bet="duel5-6">5 или 6</div>
+                <div class="bet-option" data-bet="exact1">Точно 1</div>
+                <div class="bet-option" data-bet="exact6">Точно 6</div>
             </div>
         </div>
 
-        <div class="message" id="message"></div>
+        <button class="btn-bet" id="btn-bet">СДЕЛАТЬ СТАВКУ</button>
     </div>
+
+    <div class="message" id="message"></div>
 
     <script>
         const gameState = {
             balance: parseInt(document.getElementById('balance').textContent),
-            betAmount: 100,
-            betType: null,
-            betValue: null,
+            betAmount: 10,
+            selectedBet: null,
+            selectedBetName: '',
             isPlaying: false
         };
 
         const elements = {
             balance: document.getElementById('balance'),
             betAmount: document.getElementById('bet-amount'),
+            btnBet: document.getElementById('btn-bet'),
             dice: document.getElementById('dice'),
             result: document.getElementById('result'),
             message: document.getElementById('message'),
-            btnBet: document.getElementById('btn-bet'),
-            btnBack: document.getElementById('btn-back'),
-            selectedBet: document.getElementById('selected-bet'),
-            betTypes: document.querySelectorAll('.bet-type'),
-            allBetOptions: document.querySelectorAll('.bet-options'),
-            numberOptions: document.getElementById('number-options'),
-            evenOddOptions: document.getElementById('even_odd-options'),
-            highLowOptions: document.getElementById('high_low-options'),
-            rangeOptions: document.getElementById('range-options'),
-            jackpotOptions: document.getElementById('jackpot-options')
+            betOptions: document.getElementById('bet-options'),
+            betToggle: document.getElementById('bet-toggle'),
+            selectedBetDisplay: document.getElementById('selected-bet')
         };
 
         function getUserId() {
@@ -397,242 +320,186 @@
             return urlParams.get('user_id');
         }
 
-        function getUserData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return {
-                id: urlParams.get('user_id'),
-                first_name: urlParams.get('first_name'),
-                username: urlParams.get('username'),
-                photo_id: urlParams.get('photo_id')
-            };
-        }
-
-        function goBack() {
-            const userData = getUserData();
-            const params = new URLSearchParams();
-            params.append('user_id', userData.id);
-            if (userData.first_name) params.append('first_name', userData.first_name);
-            if (userData.username) params.append('username', userData.username);
-            if (userData.photo_id) params.append('photo_id', userData.photo_id);
-
-            window.location.href = `/?${params.toString()}`;
-        }
-
         function initGame() {
-            updateUI();
-            setupEventListeners();
-        }
+            updateBalance();
 
-        function setupEventListeners() {
             elements.btnBet.addEventListener('click', placeBet);
-            elements.btnBack.addEventListener('click', goBack);
-            elements.betAmount.addEventListener('input', validateBetAmount);
-
-            elements.betTypes.forEach(type => {
-                type.addEventListener('click', () => selectBetType(type));
-            });
+            elements.betAmount.addEventListener('input', validateBet);
+            elements.betToggle.addEventListener('click', toggleBetOptions);
 
             document.querySelectorAll('.bet-option').forEach(option => {
-                option.addEventListener('click', () => selectBetOption(option));
+                option.addEventListener('click', () => selectBet(option));
             });
         }
 
-        function selectBetType(typeElement) {
-            if (gameState.isPlaying) return;
-
-            const betType = typeElement.dataset.type;
-            gameState.betType = betType;
-            
-            // Сброс всех активных состояний
-            elements.betTypes.forEach(t => t.classList.remove('active'));
-            elements.allBetOptions.forEach(opt => opt.classList.remove('visible'));
-            
-            // Активация выбранного типа
-            typeElement.classList.add('active');
-            
-            // Показ соответствующих опций
-            document.getElementById(`${betType}-options`).classList.add('visible');
-            
-            // Сброс выбранного значения
-            gameState.betValue = null;
-            updateSelectedBetDisplay();
+        function toggleBetOptions() {
+            elements.betToggle.classList.toggle('open');
+            elements.betOptions.classList.toggle('visible');
         }
 
-        function selectBetOption(optionElement) {
+        function selectBet(option) {
             if (gameState.isPlaying) return;
-            
-            const betValue = optionElement.dataset.value;
-            gameState.betValue = betValue;
-            
-            // Сброс активных состояний опций
+
             document.querySelectorAll('.bet-option').forEach(opt => opt.classList.remove('active'));
-            
-            // Активация выбранной опции
-            optionElement.classList.add('active');
-            
-            updateSelectedBetDisplay();
-        }
+            option.classList.add('active');
+            gameState.selectedBet = option.dataset.bet;
+            gameState.selectedBetName = option.textContent;
 
-        function updateSelectedBetDisplay() {
-            if (!gameState.betType) {
-                elements.selectedBet.textContent = "Выберите тип ставки и значение";
-                return;
-            }
-            
-            let displayText = "";
-            const betValue = gameState.betValue;
-            
-            switch(gameState.betType) {
-                case 'number':
-                    displayText = `🔢 Ставка на число: ${betValue}`;
-                    break;
-                case 'even_odd':
-                    displayText = `🔴 Ставка на ${betValue === 'even' ? 'Чет (2,4,6)' : 'Нечет (1,3,5)'}`;
-                    break;
-                case 'high_low':
-                    displayText = `⬆️ Ставка на ${betValue === 'high' ? 'Больше 3 (4-6)' : 'Меньше 4 (1-3)'}`;
-                    break;
-                case 'range':
-                    displayText = `🎯 Ставка на диапазон: ${betValue}`;
-                    break;
-                case 'jackpot':
-                    displayText = `💥 Джекпот на число: ${betValue} (x20 если выпадет дважды подряд)`;
-                    break;
-            }
-            
-            elements.selectedBet.textContent = displayText;
-        }
+            elements.selectedBetDisplay.textContent = `Выбрано: ${gameState.selectedBetName}`;
+            elements.selectedBetDisplay.classList.add('visible');
 
-        function validateBetAmount() {
-            const value = parseInt(elements.betAmount.value) || 0;
-            
-            if (value < 10) {
-                elements.betAmount.value = 10;
-            }
-            
-            if (value > gameState.balance) {
-                elements.betAmount.value = gameState.balance;
-            }
-            
-            gameState.betAmount = parseInt(elements.betAmount.value);
+            elements.betToggle.classList.remove('open');
+            elements.betOptions.classList.remove('visible');
+            elements.betToggle.textContent = 'Изменить ставку';
         }
 
         function placeBet() {
             if (gameState.isPlaying) {
-                showMessage("Дождитесь завершения текущей игры!", true);
+                showMessage('Дождитесь завершения текущей игры!', true);
                 return;
             }
-            
+
             const betAmount = parseInt(elements.betAmount.value);
             const userId = getUserId();
-            
-            if (isNaN(betAmount) || betAmount < 10) {
-                showMessage("Минимальная ставка 10₽", true);
+            const selectedBet = gameState.selectedBet;
+
+            if (isNaN(betAmount)) {
+                showMessage('Введите сумму ставки', true);
                 return;
             }
-            
+
+            if (betAmount < 10) {
+                showMessage('Минимальная ставка 10₽', true);
+                return;
+            }
+
             if (betAmount > gameState.balance) {
-                showMessage("Недостаточно средств", true);
+                showMessage('Недостаточно средств', true);
                 return;
             }
-            
-            if (!gameState.betType || !gameState.betValue) {
-                showMessage("Выберите тип ставки и значение", true);
+
+            if (!selectedBet) {
+                showMessage('Выберите тип ставки', true);
                 return;
             }
-            
-            fetch('/api/cube/bet', {
+
+            fetch('/api/kub/bet', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    user_id: userId,
-                    bet_amount: betAmount,
-                    bet_type: gameState.betType,
-                    bet_value: gameState.betValue
-                })
+                body: JSON.stringify({ user_id: userId, bet_amount: betAmount, selectedBet: selectedBet })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
                     gameState.balance = data.balance;
+                    gameState.betAmount = betAmount;
                     gameState.isPlaying = true;
-                    updateUI();
-                    showMessage("Ставка принята!");
+                    updateBalance();
                     rollDice();
                 } else {
                     showMessage(data.message, true);
                 }
             })
             .catch(error => {
-                console.error("Ошибка при размещении ставки:", error);
-                showMessage("Ошибка сервера", true);
+                console.error('Ошибка при размещении ставки:', error);
+                showMessage('Ошибка сервера', true);
             });
         }
 
         function rollDice() {
-            elements.dice.textContent = "?";
-            elements.dice.classList.add("rolling");
-            elements.result.classList.remove("show", "win", "lose");
-            
+            elements.dice.textContent = '?';
+            elements.dice.classList.add('rolling');
+            elements.result.classList.remove('show', 'win', 'lose');
+
             const userId = getUserId();
-            
+            const selectedBet = gameState.selectedBet;
+
             setTimeout(() => {
-                fetch('/api/cube/roll', {
+                elements.dice.classList.remove('rolling');
+
+                fetch('/api/kub/roll', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        user_id: userId
-                    })
+                    body: JSON.stringify({ user_id: userId, selectedBet: selectedBet })
                 })
                 .then(response => response.json())
                 .then(data => {
-                    elements.dice.classList.remove("rolling");
-                    
                     if (data.status === 'success') {
-                        const diceValue = data.dice_value;
+                        elements.dice.textContent = data.dice_value;
                         const win = data.win;
                         const winAmount = data.win_amount;
-                        
-                        elements.dice.textContent = diceValue;
                         gameState.balance = data.balance;
-                        
-                        elements.result.textContent = win 
-                            ? `Вы выиграли ${winAmount}₽ (x${data.multiplier})` 
-                            : `Вы проиграли ${gameState.betAmount}₽`;
-                        elements.result.className = `result show ${win ? 'win' : 'lose'}`;
-                        
-                        showMessage(win ? `Поздравляем! Выигрыш ${winAmount}₽` : `Выпало ${diceValue}. Попробуйте еще!`, !win);
+                        updateBalance();
+                        elements.result.textContent = win ? `Вы выиграли ${winAmount}₽!` : `Вы проиграли ${gameState.betAmount}₽`;
+                        elements.result.classList.add(win ? 'win' : 'lose', 'show');
+                        showMessage(win ? `Вы выиграли ${winAmount}₽!` : `Вы проиграли ${gameState.betAmount}₽`, !win);
+                        gameState.isPlaying = false;
                     } else {
                         showMessage(data.message, true);
+                        gameState.isPlaying = false;
+                        resetGame();
                     }
-                    
-                    gameState.isPlaying = false;
-                    updateUI();
                 })
                 .catch(error => {
-                    console.error("Ошибка при броске кубика:", error);
-                    showMessage("Ошибка сервера", true);
+                    console.error('Ошибка при броске кубика:', error);
+                    showMessage('Ошибка сервера', true);
                     gameState.isPlaying = false;
-                    elements.dice.classList.remove("rolling");
-                    updateUI();
+                    resetGame();
                 });
             }, 1000);
         }
 
-        function updateUI() {
+        function resetGame() {
+            const userId = getUserId();
+            fetch('/api/kub/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: userId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    console.error('Ошибка при сбросе игры:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при сбросе игры:', error);
+            });
+        }
+
+        function validateBet() {
+            const value = parseInt(elements.betAmount.value);
+
+            if (isNaN(value)) {
+                elements.betAmount.value = '';
+                return;
+            }
+
+            if (value < 10) {
+                return;
+            }
+
+            if (value > gameState.balance) {
+                elements.betAmount.value = gameState.balance;
+            }
+        }
+
+        function updateBalance() {
             elements.balance.textContent = gameState.balance;
-            elements.btnBet.disabled = gameState.isPlaying;
         }
 
         function showMessage(text, isError = false) {
             elements.message.textContent = text;
-            elements.message.className = 'message' + (isError ? ' error' : '');
+            elements.message.className = 'message';
+            if (isError) elements.message.classList.add('error');
             elements.message.classList.add('show');
-            
+
             setTimeout(() => {
                 elements.message.classList.remove('show');
             }, 3000);
