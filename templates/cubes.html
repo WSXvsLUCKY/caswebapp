@@ -33,12 +33,32 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+            position: relative;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .balance {
@@ -260,6 +280,7 @@
 <body>
     <div class="game-container">
         <div class="header">
+            <button class="back-btn" onclick="goBack()">← Назад</button>
             <h1 style="margin: 0; text-shadow: var(--text-glow);">🎲 Куб</h1>
             <div class="balance">💰 <span id="balance">{{ initial_balance }}</span>₽</div>
         </div>
@@ -318,6 +339,27 @@
         function getUserId() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('user_id');
+        }
+
+        function getUserData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                id: urlParams.get('user_id'),
+                first_name: urlParams.get('first_name'),
+                username: urlParams.get('username'),
+                photo_id: urlParams.get('photo_id')
+            };
+        }
+
+        function goBack() {
+            const userData = getUserData();
+            const params = new URLSearchParams();
+            params.append('user_id', userData.id);
+            if (userData.first_name) params.append('first_name', userData.first_name);
+            if (userData.username) params.append('username', userData.username);
+            if (userData.photo_id) params.append('photo_id', userData.photo_id);
+
+            window.location.href = `/?${params.toString()}`;
         }
 
         function initGame() {
@@ -383,14 +425,23 @@
                 return;
             }
 
-            fetch('/api/kub/bet', {
+            fetch('/api/cubes/bet', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ user_id: userId, bet_amount: betAmount, selectedBet: selectedBet })
+                body: JSON.stringify({ 
+                    user_id: userId, 
+                    bet_amount: betAmount, 
+                    selectedBet: selectedBet 
+                })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     gameState.balance = data.balance;
@@ -399,7 +450,7 @@
                     updateBalance();
                     rollDice();
                 } else {
-                    showMessage(data.message, true);
+                    showMessage(data.message || 'Ошибка при размещении ставки', true);
                 }
             })
             .catch(error => {
@@ -419,14 +470,19 @@
             setTimeout(() => {
                 elements.dice.classList.remove('rolling');
 
-                fetch('/api/kub/roll', {
+                fetch('/api/cubes/roll', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ user_id: userId, selectedBet: selectedBet })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.status === 'success') {
                         elements.dice.textContent = data.dice_value;
@@ -439,7 +495,7 @@
                         showMessage(win ? `Вы выиграли ${winAmount}₽!` : `Вы проиграли ${gameState.betAmount}₽`, !win);
                         gameState.isPlaying = false;
                     } else {
-                        showMessage(data.message, true);
+                        showMessage(data.message || 'Ошибка при броске кубика', true);
                         gameState.isPlaying = false;
                         resetGame();
                     }
@@ -455,14 +511,19 @@
 
         function resetGame() {
             const userId = getUserId();
-            fetch('/api/kub/reset', {
+            fetch('/api/cubes/reset', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ user_id: userId })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status !== 'success') {
                     console.error('Ошибка при сбросе игры:', data.message);
