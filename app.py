@@ -1036,7 +1036,7 @@ def tower():
     temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
     user = User(temp_user_data)
 
-    return render_template('tower.html',
+    return render_template('royalmines.html',
                            user_id=user.user_id,
                            username=user.username,
                            first_name=user.first_name,
