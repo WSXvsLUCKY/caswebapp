@@ -79,6 +79,7 @@
         .balance-container {
             display: flex;
             align-items: center;
+            margin-left: auto; /* Добавлено для выравнивания вправо */
         }
         
         .balance {
@@ -96,20 +97,10 @@
             margin-left: 6px;
         }
         
-        .user-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid var(--neon-blue);
-            margin-right: 6px;
-            box-shadow: 0 0 6px rgba(0, 245, 255, 0.3);
-        }
-        
         .balance-info {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: flex-end; /* Изменено на flex-end для выравнивания вправо */
             margin-right: 4px;
         }
         
@@ -306,11 +297,6 @@
                 font-size: 12px;
             }
             
-            .user-avatar {
-                width: 32px;
-                height: 32px;
-            }
-            
             .balance-amount {
                 font-size: 13px;
             }
@@ -360,7 +346,6 @@
         </div>
         <div class="balance-container">
             <div class="balance">
-                <img src="{{ photo_url|default('/static/images/avatar.png') }}" alt="User Avatar" class="user-avatar" id="user-avatar">
                 <div class="balance-info">
                     <div class="balance-amount">
                         <img src="/static/images/wallet.png">
@@ -426,18 +411,13 @@
         const CURRENT_USER = {
             id: {{ user_id|default(0) }},
             first_name: "{{ first_name|default('Игрок') }}",
-            username: "{{ username|default('') }}",
-            photo_id: "{{ photo_id|default('') }}"
+            username: "{{ username|default('') }}"
         };
 
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', async () => {
             await loadUserData();
             setupViewport();
-            
-            if (CURRENT_USER.photo_id && !document.getElementById('user-avatar').src.includes('photo')) {
-                await loadUserPhoto();
-            }
         });
 
         // Настройка viewport для мобильных устройств
@@ -483,22 +463,6 @@
             }
         }
 
-        // Загрузка фото профиля
-        async function loadUserPhoto() {
-            if (!CURRENT_USER.photo_id) return;
-            
-            try {
-                const response = await fetch(`/api/user/photo?photo_id=${CURRENT_USER.photo_id}`);
-                const data = await response.json();
-                
-                if (data.status === 'success' && data.photo_url) {
-                    document.getElementById('user-avatar').src = data.photo_url;
-                }
-            } catch (error) {
-                console.error('Error loading user photo:', error);
-            }
-        }
-
         // Навигация по играм
         function launchGame(game) {
             // Проверяем доступные игры
@@ -513,7 +477,6 @@
             params.append('user_id', CURRENT_USER.id);
             params.append('first_name', CURRENT_USER.first_name);
             if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
-            if (CURRENT_USER.photo_id) params.append('photo_id', CURRENT_USER.photo_id);
 
             // Перенаправляем на игру с параметрами
             window.location.href = `/${game}?${params.toString()}`;
