@@ -405,63 +405,82 @@
     }
 
     function selectCell(row, col) {
-      if (!gameState.isPlaying || gameState.gameEnded) return;
+    if (!gameState.isPlaying || gameState.gameEnded) return;
 
-      const cell = gameState.board[row][col];
-      const isMine = gameState.minePositions[row] === col;
+    const cell = gameState.board[row][col];
+    const isMine = gameState.minePositions[row] === col;
 
-      cell.classList.add("revealed");
-      cell.onclick = null; // Отключаем клик после выбора
+    cell.classList.add("revealed");
+    cell.onclick = null; // Отключаем клик после выбора
 
-      const userId = getUserId();
-      
-      fetch('/api/tower/select_cell', {
+    const userId = getUserId();
+    
+    fetch('/api/tower/select_cell', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          user_id: userId,
-          row: row,
-          col: col,
-          mines_positions: gameState.minePositions,
-          current_multiplier: gameState.multiplier
+            user_id: userId,
+            row: row,
+            col: col,
+            mines_positions: gameState.minePositions,
+            current_multiplier: gameState.multiplier
         })
-      })
-      .then(response => {
+    })
+    .then(response => {
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+            throw new Error('Network response was not ok');
         }
         return response.json();
-      })
-      .then(data => {
+    })
+    .then(data => {
         if (data.status === 'mine') {
-          cell.classList.add("mine");
-          gameState.balance = data.balance;
-          gameState.gameEnded = true;
-          showMessage("Вы проиграли!", true);
-          updateUI();
+            cell.classList.add("mine");
+            gameState.balance = data.balance;
+            gameState.gameEnded = true;
+            showMessage("Вы проиграли!", true);
+            updateUI();
         } else if (data.status === 'gem') {
-          cell.classList.add("gem");
-          gameState.multiplier = data.multiplier;
-          gameState.currentRow--;
+            cell.classList.add("gem");
+            gameState.multiplier = data.multiplier;
+            gameState.currentRow--;
 
-          if (gameState.currentRow < 0) {
-            showMessage("Вы прошли всю башню!", false);
-            cashOut(true);
-          } else {
-            enableRow(gameState.currentRow);
-          }
-          updateUI();
+            // Проверяем, дошли ли мы до конца башни
+            if (gameState.currentRow < 0) {
+                // Автоматически завершаем игру с выигрышем
+                fetch('/api/tower/cash_out', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        user_id: userId,
+                        multiplier: gameState.multiplier
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        gameState.balance = data.balance;
+                        gameState.gameEnded = true;
+                        showMessage(`Вы прошли всю башню и выиграли ${data.win_amount.toFixed(2)}₽!`, false);
+                        updateUI();
+                    }
+                });
+            } else {
+                enableRow(gameState.currentRow);
+            }
+            updateUI();
         } else {
-          showMessage(data.message || 'Ошибка при выборе ячейки', true);
+            showMessage(data.message || 'Ошибка при выборе ячейки', true);
         }
-      })
-      .catch(error => {
+    })
+    .catch(error => {
         console.error('Ошибка при выборе ячейки:', error);
         showMessage('Ошибка сервера', true);
-      });
-    }
+    });
+}
 
     function cashOut(auto = false) {
       if (!gameState.isPlaying || gameState.gameEnded) return;
