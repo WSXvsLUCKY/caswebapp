@@ -252,7 +252,7 @@
 
         <div class="controls">
             <div class="bet-control">
-                <input type="number" id="bet-amount" min="10" value="100" placeholder="Ставка">
+                <input type="number" id="bet-amount" value="100" placeholder="Ставка">
                 <select id="mines-count">
                     <option value="3" selected>3 мины</option>
                     <option value="5">5 мин</option>
@@ -592,7 +592,6 @@ elements.btnCashout.addEventListener('click', cashOut);
 elements.btnBack.addEventListener('click', goBack);
 elements.betAmount.addEventListener('input', () => {
     const value = parseInt(elements.betAmount.value) || 0;
-    if (value < 10) elements.betAmount.value = 10;
     if (value > gameState.balance) elements.betAmount.value = gameState.balance;
     gameState.betAmount = parseInt(elements.betAmount.value);
 });
