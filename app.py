@@ -60,7 +60,8 @@ def init_db():
         cursor.execute("""
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS current_bet DECIMAL(15, 2) DEFAULT 0.00,
-            ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle';
+            ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle',
+            ADD COLUMN IF NOT EXISTS photo_url VARCHAR(512);
         """)
 
         #Создаем таблицу пользователей
@@ -71,6 +72,7 @@ def init_db():
             first_name VARCHAR(255),
             balance DECIMAL(15, 2) DEFAULT 0.00,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
+            photo_url VARCHAR(512),
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
             game_state VARCHAR(50) DEFAULT 'idle',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -130,11 +132,13 @@ class User:
         self.user_id = int(user_data['id']) if isinstance(user_data['id'], (str, float)) and str(user_data['id']).isdigit() else user_data['id']
         self.username = user_data.get('username', '')
         self.first_name = user_data.get('first_name', 'User')
+        self.photo_id = user_data.get('photo_id', '')
 
         self.balance = 0.00
         self.auto_cashout = 2.00
         self.current_bet = 0.00
         self.game_state = 'idle'
+        self.photo_url = ''
 
         self.load_from_db()
 
@@ -147,7 +151,7 @@ class User:
         try:
             cursor = connection.cursor()
             cursor.execute("""
-            SELECT username, first_name, balance, auto_cashout, current_bet, game_state
+            SELECT username, first_name, balance, auto_cashout, photo_url, current_bet, game_state
             FROM users WHERE user_id = %s
             """, (self.user_id,))
             user = cursor.fetchone()
@@ -168,9 +172,14 @@ class User:
                 self.first_name = user[1] or self.first_name
                 self.balance = float(user[2])
                 self.auto_cashout = float(user[3])
-                self.current_bet = float(user[4])
-                self.game_state = user[5] or 'idle'
+                self.photo_url = user[4] or ''
+                self.current_bet = float(user[5])
+                self.game_state = user[6] or 'idle'
 
+                if self.photo_id and (not self.photo_url or 'avatar.png' in self.photo_url):
+                    self.photo_url = self.get_telegram_photo_url()
+                    if self.photo_url:
+                        self.update_photo_url(connection)
 
         except OperationalError as e:
             logger.error(f"Error loading or creating user {self.user_id} from DB: {e}")
@@ -179,6 +188,41 @@ class User:
         finally:
             if connection:
                 connection.close()
+
+    def get_telegram_photo_url(self):
+        """Получает URL фото профиля из Telegram"""
+        if not self.photo_id or self.photo_id == 'None':
+            return ''
+
+        try:
+            file_info_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={self.photo_id}"
+            response = requests.get(file_info_url, timeout=5)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get('ok') and result.get('result'):
+                file_path = result['result'].get('file_path')
+                if file_path:
+                    photo_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                    logger.info(f"Got Telegram photo URL for {self.user_id}: {photo_url}")
+                    return photo_url
+        except Exception as e:
+            logger.error(f"Error getting Telegram photo URL for {self.user_id}: {e}")
+        return ''
+
+    def update_photo_url(self, connection):
+        """Обновляет URL фото в базе данных"""
+        if not self.photo_url or not connection:
+            return
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users SET photo_url = %s WHERE user_id = %s
+            """, (self.photo_url, self.user_id))
+        except Exception as e:
+            logger.error(f"Error updating photo URL for user {self.user_id}: {e}")
+            raise
 
     def save_game_state(self, connection):
         """Сохраняет состояние игры пользователя"""
@@ -264,43 +308,20 @@ def home():
     user_id = request.args.get('user_id', type=int)
     username = request.args.get('username', '')
     first_name = request.args.get('first_name', 'Игрок')
+    photo_id = request.args.get('photo_id', '')
 
     if not user_id:
         logger.warning("User ID is missing or 0 in the initial request URL.")
         user_id = 0
 
-    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name}
+    temp_user_data = {'id': user_id, 'username': username, 'first_name': first_name, 'photo_id': photo_id}
     user = User(temp_user_data)
 
     return render_template('menu.html',
                          user_id=user.user_id,
                          username=user.username,
-                         first_name=user.first_name)
-
-# API для работы с пользователем
-@app.route('/api/user', methods=['POST'])
-def get_user():
-    try:
-        data = request.get_json()
-        user_id = data.get('user', {}).get('id')
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
-
-        user = User({'id': user_id})
-        return jsonify({
-            'status': 'success',
-            'user': {
-                'id': user.user_id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'balance': user.balance,
-                'auto_cashout': user.auto_cashout,
-                'photo_url': user.photo_url
-            }
-        })
-    except Exception as e:
-        logger.error(f"API /api/user error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+                         first_name=user.first_name,
+                         photo_url=user.photo_url)
 
 #===============================================================#
                             # АВИАТОР 
@@ -326,7 +347,30 @@ def aviator():
                          first_name=user.first_name,
                          photo_url=user.photo_url)
 
+# API для работы с пользователем
+@app.route('/api/user', methods=['POST'])
+def get_user():
+    try:
+        data = request.get_json()
+        user_id = data.get('user', {}).get('id')
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
 
+        user = User({'id': user_id})
+        return jsonify({
+            'status': 'success',
+            'user': {
+                'id': user.user_id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'balance': user.balance,
+                'auto_cashout': user.auto_cashout,
+                'photo_url': user.photo_url
+            }
+        })
+    except Exception as e:
+        logger.error(f"API /api/user error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 # API для Авиатора
 @app.route('/api/aviator/init', methods=['POST'])
