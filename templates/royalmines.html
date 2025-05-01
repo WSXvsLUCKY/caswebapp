@@ -68,20 +68,17 @@
       border: 1px solid var(--accent);
     }
 
-    .row {
+    .game-area {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
-    .row-label {
-      width: 30px;
+    .row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: var(--accent);
+      gap: 10px;
     }
 
     .cell {
@@ -233,7 +230,7 @@
       Текущий ряд: <span id="row-number">1</span>
     </div>
 
-    <div id="game-area"></div>
+    <div class="game-area" id="game-area"></div>
 
     <div class="controls">
       <div class="bet-control">
@@ -254,9 +251,10 @@
       multiplier: 1.0,
       rows: 6,
       cols: 3,
-      currentRow: 5, // Нижний ряд
+      currentRow: 0, // Верхний ряд
       minePositions: [],
-      gameEnded: false
+      gameEnded: false,
+      board: []
     };
 
     const elements = {
@@ -302,7 +300,7 @@
 
     function validateBet() {
       let bet = parseFloat(elements.betAmount.value);
-      if (isNaN(bet) || bet <= 0) bet = 10;
+      if (isNaN(bet)) bet = 10;
       if (bet < 10) bet = 10;
       if (bet > gameState.balance) bet = gameState.balance;
       elements.betAmount.value = bet;
@@ -322,21 +320,19 @@
       for (let r = 0; r < gameState.rows; r++) {
         const rowDiv = document.createElement("div");
         rowDiv.className = "row";
-        const label = document.createElement("div");
-        label.className = "row-label";
-        label.textContent = gameState.rows - r;
-        rowDiv.appendChild(label);
-
+        
         const rowCells = [];
         for (let c = 0; c < gameState.cols; c++) {
           const cell = document.createElement("div");
           cell.className = "cell disabled";
+          cell.dataset.row = r;
+          cell.dataset.col = c;
           rowDiv.appendChild(cell);
           rowCells.push(cell);
         }
 
-        gameState.board.unshift(rowCells); // добавляем вверх (снизу вверх)
-        elements.gameArea.prepend(rowDiv);
+        elements.gameArea.appendChild(rowDiv);
+        gameState.board.push(rowCells);
       }
     }
 
@@ -378,7 +374,7 @@
           gameState.balance = data.balance;
           gameState.isPlaying = true;
           gameState.multiplier = 1.0;
-          gameState.currentRow = gameState.rows - 1;
+          gameState.currentRow = 0;
           gameState.gameEnded = false;
           gameState.minePositions = data.mines_positions;
 
@@ -396,93 +392,115 @@
     }
 
     function enableRow(rowIndex) {
-      if (rowIndex < 0) return;
+      if (rowIndex >= gameState.rows) return;
+      
+      // Отключаем все ячейки
+      gameState.board.forEach(row => {
+        row.forEach(cell => {
+          cell.classList.add("disabled");
+          cell.onclick = null;
+        });
+      });
+      
+      // Включаем только текущий ряд
       gameState.board[rowIndex].forEach((cell, colIndex) => {
         cell.classList.remove("disabled");
         cell.onclick = () => selectCell(rowIndex, colIndex);
       });
-      elements.rowNumber.textContent = gameState.rows - rowIndex;
+      
+      elements.rowNumber.textContent = rowIndex + 1;
     }
 
     function selectCell(row, col) {
-    if (!gameState.isPlaying || gameState.gameEnded) return;
+      if (!gameState.isPlaying || gameState.gameEnded) return;
 
-    const cell = gameState.board[row][col];
-    const isMine = gameState.minePositions[row] === col;
+      const cell = gameState.board[row][col];
+      const isMine = gameState.minePositions[row] === col;
 
-    cell.classList.add("revealed");
-    cell.onclick = null; // Отключаем клик после выбора
+      cell.classList.add("revealed");
+      cell.onclick = null;
 
-    const userId = getUserId();
-    
-    fetch('/api/tower/select_cell', {
+      const userId = getUserId();
+      
+      fetch('/api/tower/select_cell', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-            user_id: userId,
-            row: row,
-            col: col,
-            mines_positions: gameState.minePositions,
-            current_multiplier: gameState.multiplier
+          user_id: userId,
+          row: row,
+          col: col,
+          mines_positions: gameState.minePositions,
+          current_multiplier: gameState.multiplier
         })
-    })
-    .then(response => {
+      })
+      .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+          throw new Error('Network response was not ok');
         }
         return response.json();
-    })
-    .then(data => {
+      })
+      .then(data => {
         if (data.status === 'mine') {
-            cell.classList.add("mine");
-            gameState.balance = data.balance;
-            gameState.gameEnded = true;
-            showMessage("Вы проиграли!", true);
-            updateUI();
+          cell.classList.add("mine");
+          gameState.balance = data.balance;
+          gameState.gameEnded = true;
+          showMessage("Вы проиграли!", true);
+          revealAllMines();
+          updateUI();
         } else if (data.status === 'gem') {
-            cell.classList.add("gem");
-            gameState.multiplier = data.multiplier;
-            gameState.currentRow--;
+          cell.classList.add("gem");
+          gameState.multiplier = data.multiplier;
+          gameState.currentRow++;
 
-            // Проверяем, дошли ли мы до конца башни
-            if (gameState.currentRow < 0) {
-                // Автоматически завершаем игру с выигрышем
-                fetch('/api/tower/cash_out', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        user_id: userId,
-                        multiplier: gameState.multiplier
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        gameState.balance = data.balance;
-                        gameState.gameEnded = true;
-                        showMessage(`Вы прошли всю башню и выиграли ${data.win_amount.toFixed(2)}₽!`, false);
-                        updateUI();
-                    }
-                });
-            } else {
-                enableRow(gameState.currentRow);
-            }
-            updateUI();
+          if (gameState.currentRow >= gameState.rows) {
+            // Игрок прошел всю башню
+            fetch('/api/tower/cash_out', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                user_id: userId,
+                multiplier: gameState.multiplier
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === 'success') {
+                gameState.balance = data.balance;
+                gameState.gameEnded = true;
+                showMessage(`Вы прошли всю башню и выиграли ${data.win_amount.toFixed(2)}₽!`, false);
+                updateUI();
+              }
+            });
+          } else {
+            enableRow(gameState.currentRow);
+          }
+          updateUI();
         } else {
-            showMessage(data.message || 'Ошибка при выборе ячейки', true);
+          showMessage(data.message || 'Ошибка при выборе ячейки', true);
         }
-    })
-    .catch(error => {
+      })
+      .catch(error => {
         console.error('Ошибка при выборе ячейки:', error);
         showMessage('Ошибка сервера', true);
-    });
-}
+      });
+    }
 
-    function cashOut(auto = false) {
+    function revealAllMines() {
+      gameState.minePositions.forEach((col, row) => {
+        if (row <= gameState.currentRow) {
+          const cell = gameState.board[row][col];
+          if (!cell.classList.contains("revealed")) {
+            cell.classList.add("mine");
+          }
+        }
+      });
+    }
+
+    function cashOut() {
       if (!gameState.isPlaying || gameState.gameEnded) return;
       
       const userId = getUserId();
@@ -507,9 +525,7 @@
         if (data.status === 'success') {
           gameState.balance = data.balance;
           gameState.gameEnded = true;
-          if (!auto) {
-            showMessage(`Вы забрали ${data.win_amount.toFixed(2)}₽`);
-          }
+          showMessage(`Вы забрали ${data.win_amount.toFixed(2)}₽`);
           updateUI();
         } else {
           showMessage(data.message || 'Ошибка при выводе средств', true);
@@ -552,22 +568,17 @@
       });
     }
 
+    // Инициализация игры
     document.addEventListener("DOMContentLoaded", () => {
       updateBalance();
       createGameBoard();
       elements.btnBet.onclick = startGame;
       elements.btnCashout.onclick = cashOut;
       
-      // Проверяем состояние игры при загрузке
+      // Сброс состояния игры при загрузке
       const userId = getUserId();
       if (userId) {
-        fetch('/api/tower/reset', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ user_id: userId })
-        });
+        resetGame();
       }
     });
   </script>
