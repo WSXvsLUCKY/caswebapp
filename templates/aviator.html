@@ -495,6 +495,7 @@
 
             if (isNaN(betAmount) || betAmount < 10) {
                 showMessage('Минимальная ставка 10₽', true);
+                elements.betAmount.value = 10; // Обновляем значение поля ввода
                 return;
             }
 
@@ -548,6 +549,18 @@
                 showMessage('Ошибка соединения при размещении ставки: ' + error.message, true);
                 elements.btnBet.disabled = false;
                 elements.betAmount.disabled = false;
+            }
+        }
+
+        function validateBet() {
+            const value = parseInt(elements.betAmount.value);
+            if (isNaN(value) || value < 10) {
+                // Не обновляем elements.betAmount.value здесь,
+                // чтобы пользователь видел введенное значение перед выводом ошибки.
+                return;
+            }
+            if (value > gameState.balance) {
+                elements.betAmount.value = gameState.balance;
             }
         }
 
@@ -829,12 +842,6 @@
             elements.btnCashout.disabled = !gameState.isPlaying;
         }
 
-        function validateBet() {
-            const value = parseInt(elements.betAmount.value);
-            if (isNaN(value) || value < 10) {
-                elements.betAmount.value = 10;
-            }
-        }
 
         function endGame(isWin) {
             gameState.isPlaying = false;
