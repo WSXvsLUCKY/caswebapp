@@ -60,8 +60,7 @@ def init_db():
         cursor.execute("""
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS current_bet DECIMAL(15, 2) DEFAULT 0.00,
-            ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle',
-            ADD COLUMN IF NOT EXISTS photo_url VARCHAR(512);
+            ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle';
         """)
 
         #Создаем таблицу пользователей
@@ -72,7 +71,6 @@ def init_db():
             first_name VARCHAR(255),
             balance DECIMAL(15, 2) DEFAULT 0.00,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
-            photo_url VARCHAR(512),
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
             game_state VARCHAR(50) DEFAULT 'idle',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -132,7 +130,7 @@ class User:
         self.user_id = int(user_data['id']) if isinstance(user_data['id'], (str, float)) and str(user_data['id']).isdigit() else user_data['id']
         self.username = user_data.get('username', '')
         self.first_name = user_data.get('first_name', 'User')
-        
+
         self.balance = 0.00
         self.auto_cashout = 2.00
         self.current_bet = 0.00
@@ -156,10 +154,13 @@ class User:
 
             if not user:
                 logger.info(f"User {self.user_id} not found in DB, creating new.")
+                if self.photo_id:
+                    self.photo_url = self.get_telegram_photo_url()
+
                 cursor.execute("""
-                INSERT INTO users (user_id, username, first_name, balance, auto_cashout, current_bet, game_state)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (self.user_id, self.username, self.first_name, self.balance, self.auto_cashout, self.current_bet, self.game_state))
+                INSERT INTO users (user_id, username, first_name, balance, auto_cashout, photo_url, current_bet, game_state)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (self.user_id, self.username, self.first_name, self.balance, self.auto_cashout, self.photo_url, self.current_bet, self.game_state))
                 connection.commit()
             else:
                 logger.info(f"User {self.user_id} found in DB, loading data.")
@@ -169,6 +170,7 @@ class User:
                 self.auto_cashout = float(user[3])
                 self.current_bet = float(user[4])
                 self.game_state = user[5] or 'idle'
+
 
         except OperationalError as e:
             logger.error(f"Error loading or creating user {self.user_id} from DB: {e}")
@@ -275,6 +277,31 @@ def home():
                          username=user.username,
                          first_name=user.first_name)
 
+# API для работы с пользователем
+@app.route('/api/user', methods=['POST'])
+def get_user():
+    try:
+        data = request.get_json()
+        user_id = data.get('user', {}).get('id')
+        if not user_id:
+            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
+
+        user = User({'id': user_id})
+        return jsonify({
+            'status': 'success',
+            'user': {
+                'id': user.user_id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'balance': user.balance,
+                'auto_cashout': user.auto_cashout,
+                'photo_url': user.photo_url
+            }
+        })
+    except Exception as e:
+        logger.error(f"API /api/user error: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+
 #===============================================================#
                             # АВИАТОР 
 #===============================================================#
@@ -299,29 +326,7 @@ def aviator():
                          first_name=user.first_name,
                          photo_url=user.photo_url)
 
-# API для работы с пользователем
-@app.route('/api/user', methods=['POST'])
-def get_user():
-    try:
-        data = request.get_json()
-        user_id = data.get('user', {}).get('id')
-        if not user_id:
-            return jsonify({'status': 'error', 'message': 'Missing user ID'}), 400
 
-        user = User({'id': user_id})
-        return jsonify({
-            'status': 'success',
-            'user': {
-                'id': user.user_id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'balance': user.balance,
-                'auto_cashout': user.auto_cashout
-            }
-        })
-    except Exception as e:
-        logger.error(f"API /api/user error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 # API для Авиатора
 @app.route('/api/aviator/init', methods=['POST'])
@@ -969,6 +974,7 @@ def kub_reset():
     finally:
         if connection:
             connection.close()
+            
 #===============================================================#
                 # БАШНЯ
 #===============================================================#
