@@ -19,15 +19,14 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-BOT_TOKEN = '7112560650:AAGGs3JMHouw2T5phdfrNZgaDZODxNHrtF0'
+BOT_TOKEN = '8056124415:AAFIAyBtNxploGdE8Auk2i6m15gruZSLyoQ'
 POSTGRES_CONFIG = {
-    'host': 'dpg-d058p7je5dus73cm4bqg-a.oregon-postgres.render.com',
-    'port': 5432,
-    'database': 'pr_5zka',
-    'user': 'user_admin',
-    'password': 'CW6tBkBfYvqWcRVX5E1CIL6m6C2uabDY'
+    'host': 'dpg-d0gutm3e5dus73an8ol0-a.oregon-postgres.render.com',
+    'port': 5432,  # Стандартный порт PostgreSQL, если не указан явно в URL
+    'database': 'dbname_5irz',
+    'user': 'user_data',
+    'password': '6ekqhYE3rjIpmKSSCnBbMIfjsqYuu0Ts'
 }
-
 #===============================================================#
                     # Настройка логирования
 #===============================================================#
@@ -71,6 +70,16 @@ def init_db():
             username VARCHAR(255),
             first_name VARCHAR(255),
             balance DECIMAL(15, 2) DEFAULT 0.00,
+                    referral_balance DECIMAL(10, 2) DEFAULT 0.00,
+                    referrals BIGINT[] DEFAULT '{}',
+                    referrer BIGINT,
+                    games_played BIGINT DEFAULT 0,
+                    wins BIGINT DEFAULT 0,
+                    losses BIGINT DEFAULT 0,
+                    total_bets DECIMAL(12, 2) DEFAULT 0.00,
+                    total_wins_amount DECIMAL(12, 2) DEFAULT 0.00,
+                    total_lose_amount DECIMAL(12, 2) DEFAULT 0.00,
+                    last_game_state JSONB,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
             photo_url VARCHAR(512),
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
