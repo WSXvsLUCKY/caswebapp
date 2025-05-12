@@ -50,36 +50,28 @@ def init_db():
     """Инициализация базы данных и таблиц"""
     connection = create_db_connection()
     if not connection:
-        return
+        return False
 
     try:
         cursor = connection.cursor()
 
-        #Добавляем необходимые колонки если их нет
-        cursor.execute("""
-            ALTER TABLE users
-            ADD COLUMN IF NOT EXISTS current_bet DECIMAL(15, 2) DEFAULT 0.00,
-            ADD COLUMN IF NOT EXISTS game_state VARCHAR(50) DEFAULT 'idle',
-            ADD COLUMN IF NOT EXISTS photo_url VARCHAR(512);
-        """)
-
-        #Создаем таблицу пользователей
+        # Сначала создаем таблицу пользователей, если ее нет
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
             username VARCHAR(255),
             first_name VARCHAR(255),
             balance DECIMAL(15, 2) DEFAULT 0.00,
-                    referral_balance DECIMAL(10, 2) DEFAULT 0.00,
-                    referrals BIGINT[] DEFAULT '{}',
-                    referrer BIGINT,
-                    games_played BIGINT DEFAULT 0,
-                    wins BIGINT DEFAULT 0,
-                    losses BIGINT DEFAULT 0,
-                    total_bets DECIMAL(12, 2) DEFAULT 0.00,
-                    total_wins_amount DECIMAL(12, 2) DEFAULT 0.00,
-                    total_lose_amount DECIMAL(12, 2) DEFAULT 0.00,
-                    last_game_state JSONB,
+            referral_balance DECIMAL(10, 2) DEFAULT 0.00,
+            referrals BIGINT[] DEFAULT '{}',
+            referrer BIGINT,
+            games_played BIGINT DEFAULT 0,
+            wins BIGINT DEFAULT 0,
+            losses BIGINT DEFAULT 0,
+            total_bets DECIMAL(12, 2) DEFAULT 0.00,
+            total_wins_amount DECIMAL(12, 2) DEFAULT 0.00,
+            total_lose_amount DECIMAL(12, 2) DEFAULT 0.00,
+            last_game_state JSONB,
             auto_cashout DECIMAL(5, 2) DEFAULT 2.00,
             photo_url VARCHAR(512),
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
@@ -89,7 +81,7 @@ def init_db():
         )
         """)
 
-        #Создаем таблицу истории игр
+        # Затем создаем таблицу истории игр
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS game_history (
             id SERIAL PRIMARY KEY,
@@ -104,7 +96,7 @@ def init_db():
         )
         """)
 
-        # Создаем триггер для обновления времени изменения
+        # Добавляем триггер для обновления времени изменения
         cursor.execute("""
         CREATE OR REPLACE FUNCTION update_timestamp()
         RETURNS TRIGGER AS $$
@@ -114,23 +106,59 @@ def init_db():
         END;
         $$ LANGUAGE plpgsql;
 
-        DROP TRIGGER IF EXISTS update_users_timestamp ON users;
-        CREATE TRIGGER update_users_timestamp
-        BEFORE UPDATE ON users
-        FOR EACH ROW
-        EXECUTE FUNCTION update_timestamp();
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_trigger 
+                WHERE tgname = 'update_users_timestamp'
+            ) THEN
+                CREATE TRIGGER update_users_timestamp
+                BEFORE UPDATE ON users
+                FOR EACH ROW
+                EXECUTE FUNCTION update_timestamp();
+            END IF;
+        END
+        $$;
+        """)
+
+        # Теперь добавляем колонки, если их нет (для обратной совместимости)
+        cursor.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name='users' AND column_name='current_bet'
+            ) THEN
+                ALTER TABLE users ADD COLUMN current_bet DECIMAL(15, 2) DEFAULT 0.00;
+            END IF;
+            
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name='users' AND column_name='game_state'
+            ) THEN
+                ALTER TABLE users ADD COLUMN game_state VARCHAR(50) DEFAULT 'idle';
+            END IF;
+            
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name='users' AND column_name='photo_url'
+            ) THEN
+                ALTER TABLE users ADD COLUMN photo_url VARCHAR(512);
+            END IF;
+        END
+        $$;
         """)
 
         connection.commit()
         logger.info("Database tables initialized successfully")
-    except OperationalError as e:
+        return True
+    except Exception as e:
         logger.error(f"Error initializing database: {e}")
         connection.rollback()
+        return False
     finally:
         if connection:
             connection.close()
-
-# Инициализация базы данных при старте
 init_db()
 #===============================================================#
                             #Класс юзера
