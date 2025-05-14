@@ -228,7 +228,7 @@ class User:
     #=============================================================================
                 # РАБОТА С СТАТОЙ
     #=============================================================================
-    async def increment_games_played(self, user_id: int):
+    def increment_games_played(self, user_id: int):
         """Увеличивает счетчик сыгранных игр"""
         connection = create_db_connection()
         if not connection:
@@ -244,7 +244,7 @@ class User:
             if connection:
                 connection.close()
 
-    async def increment_wins(self, user_id: int):
+    def increment_wins(self, user_id: int):
         """Увеличивает счетчик выигрышей"""
         connection = create_db_connection()
         if not connection:
@@ -260,7 +260,7 @@ class User:
             if connection:
                 connection.close()
 
-    async def increment_losses(self, user_id: int):
+    def increment_losses(self, user_id: int):
         """Увеличивает счетчик проигрышей"""
         connection = create_db_connection()
         if not connection:
@@ -276,7 +276,7 @@ class User:
             if connection:
                 connection.close()
 
-    async def update_total_bets(self, user_id: int, amount: float):
+    def update_total_bets(self, user_id: int, amount: float):
         """Обновляет общую сумму ставок"""
         connection = create_db_connection()
         if not connection:
@@ -292,7 +292,7 @@ class User:
             if connection:
                 connection.close()
 
-    async def update_total_wins_amount(self, user_id: int, amount: float):
+    def update_total_wins_amount(self, user_id: int, amount: float):
         """Обновляет общую сумму выигрышей"""
         connection = create_db_connection()
         if not connection:
@@ -308,7 +308,7 @@ class User:
             if connection:
                 connection.close()
 
-    async def update_total_lose_amount(self, user_id: int, amount: float):
+    def update_total_lose_amount(self, user_id: int, amount: float):
         """Обновляет общую сумму проигрышей"""
         connection = create_db_connection()
         if not connection:
