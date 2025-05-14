@@ -225,6 +225,104 @@ class User:
         finally:
             if connection:
                 connection.close()
+    #=============================================================================
+                # РАБОТА С СТАТОЙ
+    #=============================================================================
+    async def increment_games_played(self, user_id: int):
+        """Увеличивает счетчик сыгранных игр"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET games_played = games_played + 1 WHERE user_id = %s", (user_id,))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error incrementing games played: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    async def increment_wins(self, user_id: int):
+        """Увеличивает счетчик выигрышей"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET wins = wins + 1 WHERE user_id = %s", (user_id,))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error incrementing wins: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    async def increment_losses(self, user_id: int):
+        """Увеличивает счетчик проигрышей"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET losses = losses + 1 WHERE user_id = %s", (user_id,))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error incrementing losses: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    async def update_total_bets(self, user_id: int, amount: float):
+        """Обновляет общую сумму ставок"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET total_bets = total_bets + %s WHERE user_id = %s", (amount, user_id))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error updating total bets: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    async def update_total_wins_amount(self, user_id: int, amount: float):
+        """Обновляет общую сумму выигрышей"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET total_wins_amount = total_wins_amount + %s WHERE user_id = %s", (amount, user_id))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error updating total wins amount: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    async def update_total_lose_amount(self, user_id: int, amount: float):
+        """Обновляет общую сумму проигрышей"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE users SET total_lose_amount = total_lose_amount + %s WHERE user_id = %s", (amount, user_id))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error updating total lose amount: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
 
     def get_telegram_photo_url(self):
         """Получает URL фото профиля из Telegram"""
@@ -468,6 +566,9 @@ def aviator_bet():
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'bet_placed'
+        # Обновляем статистику
+        user.increment_games_played(user_id)
+        user.update_total_bets(user_id, bet_amount)
 
         user.save_game_state(connection)
 
@@ -516,7 +617,10 @@ def aviator_cashout():
         user.balance += win_amount
         user.current_bet = 0.00
         user.game_state = 'idle'
-        
+        # Обновляем статистику
+        user.increment_wins(user_id)
+        user.update_total_wins_amount(user_id, win_amount)
+
         user.save_game_state(connection)
 
         history_data = {
@@ -569,6 +673,10 @@ def aviator_crash():
             user.current_bet = 0.00
             user.game_state = 'idle'
             
+            # Обновляем статистику
+            user.increment_losses(user_id)
+            user.update_total_lose_amount(user_id, original_bet)
+
             user.save_game_state(connection)
 
             history_data = {
@@ -691,6 +799,11 @@ def mines_bet():
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'bet_placed_mines'
+
+        # Обновляем статистику
+        user.increment_games_played(user_id)
+        user.update_total_bets(user_id, bet_amount)
+
         user.save_game_state(connection)
 
         connection.commit()
@@ -730,6 +843,10 @@ def mines_reveal():
         is_mine = index in mine_positions
 
         if is_mine:
+            # Обновляем статистику
+            user.increment_losses(user_id)
+            user.update_total_lose_amount(user_id, user.current_bet)
+
             user.game_state = 'lost_mines'
             history_data = {
                 'game': 'mines',
@@ -802,6 +919,11 @@ def mines_cashout():
         user.balance += win_amount
         user.current_bet = 0.00
         user.game_state = 'idle'
+
+        # Обновляем статистику
+        user.increment_wins(user_id)
+        user.update_total_wins_amount(user_id, win_amount)
+        
         user.save_game_state(connection)
 
         history_data = {
@@ -915,6 +1037,9 @@ def kub_bet():
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'bet_placed_kub'
+        # Обновляем статистику
+        user.increment_games_played(user_id)
+        user.update_total_bets(user_id, bet_amount)
         user.save_game_state(connection)
 
         connection.commit()
@@ -986,6 +1111,9 @@ def kub_roll():
         original_bet = float(user.current_bet)
 
         if win:
+            # Обновляем статистику
+            user.increment_wins(user_id)
+            user.update_total_wins_amount(user_id, win_amount)
             win_amount = original_bet * multiplier
             user.balance += win_amount
             history_data = {
@@ -997,6 +1125,9 @@ def kub_roll():
             }
             user.add_to_history(history_data, connection)
         else:
+            # Обновляем статистику
+            user.increment_losses(user_id)
+            user.update_total_lose_amount(user_id, original_bet)
             history_data = {
                 'game': 'kub',
                 'bet_amount': original_bet,
@@ -1112,6 +1243,11 @@ def tower_start():
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'playing_tower'
+
+         # Обновляем статистику
+        user.increment_games_played(user_id)
+        user.update_total_bets(user_id, bet_amount)
+
         user.save_game_state(connection)
 
         mines_positions = [random.randint(0, cols - 1) for _ in range(rows)]
@@ -1162,6 +1298,10 @@ def tower_select_cell():
         multiplier_increase = 0.25
 
         if is_mine:
+             # Обновляем статистику
+            user.increment_losses(user_id)
+            user.update_total_lose_amount(user_id, user.current_bet)
+            
             user.game_state = 'idle'
             history_data = {
                 'game': 'tower',
@@ -1214,6 +1354,10 @@ def tower_cash_out():
         user.balance += win_amount
         user.current_bet = 0.00
         user.game_state = 'idle'
+
+        # Обновляем статистику
+        user.increment_wins(user_id)
+        user.update_total_wins_amount(user_id, win_amount)
         user.save_game_state(connection)
 
         history_data = {
