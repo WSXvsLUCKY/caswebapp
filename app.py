@@ -21,12 +21,14 @@ CORS(app)
 
 BOT_TOKEN = '8056124415:AAFIAyBtNxploGdE8Auk2i6m15gruZSLyoQ'
 POSTGRES_CONFIG = {
-    'host': 'dpg-d0gutm3e5dus73an8ol0-a.oregon-postgres.render.com',
-    'port': 5432,  # Стандартный порт PostgreSQL, если не указан явно в URL
-    'database': 'dbname_5irz',
+    'host': 'dpg-d0jjdsqdbo4c73dge3eg-a.oregon-postgres.render.com',
+    'port': 5432,  # стандартный порт PostgreSQL
+    'database': 'casino_5qph',
     'user': 'user_data',
-    'password': '6ekqhYE3rjIpmKSSCnBbMIfjsqYuu0Ts'
+    'password': 'lA9SKYhy0U5mFl5oB35VyWGZl6TtYGzQ'
 }
+
+
 #===============================================================#
                     # Настройка логирования
 #===============================================================#
