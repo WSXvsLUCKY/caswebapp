@@ -84,7 +84,6 @@ def init_db():
             aviator_total_wins DECIMAL(12, 2) DEFAULT 0.00,  -- Сумма всех выигрышей в Авиаторе
             aviator_games_played INT DEFAULT 0               -- Количество игр в Авиаторе
 )
-        )
         """)
 
         # Затем создаем таблицу истории игр
@@ -389,6 +388,7 @@ class User:
             if connection:
                 connection.close()
 
+    @staticmethod
     def calculate_aviator_rtp(connection):
         """Рассчитывает фактический RTP только для Авиатора"""
         try:
@@ -654,9 +654,8 @@ def aviator_bet():
         if user.balance < bet_amount:
             return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
 
-
         # Получаем текущую статистику Авиатора
-        aviator_stats = user.calculate_aviator_rtp(connection)
+        aviator_stats = User.calculate_aviator_rtp(connection)
         target_rtp = 0.86  # 86% RTP (14% доход казино)
         
         # Рассчитываем насколько текущий RTP отличается от целевого
@@ -683,15 +682,12 @@ def aviator_bet():
             crash_point = round(random.uniform(1.1, 10.0), 2)
 
         # Обновляем статистику
-        user = User({'id': user_id})
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'bet_placed'
         user.increment_aviator_games(user_id)
         user.update_aviator_total_bets(user_id, bet_amount)
         user.save_game_state(connection)
-
-        
 
         connection.commit()
 
