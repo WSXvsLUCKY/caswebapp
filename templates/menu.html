@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🚀 RandX Game Hub</title>
+    <title>Scrooge Bet</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Roboto:wght@400;500&display=swap');
         
@@ -56,30 +56,21 @@
             opacity: 0.5;
         }
         
-        .header .menu {
-            display: flex;
-            gap: 8px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .header .menu div {
-            cursor: pointer;
+        .logo {
             font-family: 'Montserrat', sans-serif;
-            font-weight: 500;
-            padding: 5px 8px;
-            font-size: 11px;
-            border-radius: 6px;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-            white-space: nowrap;
+            font-weight: 900;
+            font-size: 16px;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: var(--text-glow);
+            letter-spacing: 1px;
         }
         
         .balance-container {
             display: flex;
             align-items: center;
-            margin-left: auto; /* Добавлено для выравнивания вправо */
+            margin-left: auto;
         }
         
         .balance {
@@ -100,7 +91,7 @@
         .balance-info {
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Изменено на flex-end для выравнивания вправо */
+            align-items: flex-end;
             margin-right: 4px;
         }
         
@@ -276,6 +267,29 @@
             padding: 8px;
         }
         
+        .referral-link {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 12px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(90deg, #00f5ff, #9d00ff);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); }
             50% { box-shadow: 0 0 30px rgba(157, 0, 255, 0.7); }
@@ -288,13 +302,8 @@
                 padding: 12px 15px;
             }
             
-            .header .menu {
-                gap: 12px;
-            }
-            
-            .header .menu div {
-                padding: 6px 10px;
-                font-size: 12px;
+            .logo {
+                font-size: 18px;
             }
             
             .balance-amount {
@@ -339,11 +348,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="menu">
-            <div>Меню</div>
-            <div>Рефералы</div>
-            <div>Бонусы</div>
-        </div>
+        <div class="logo">SCROOGE BET</div>
         <div class="balance-container">
             <div class="balance">
                 <div class="balance-info">
@@ -363,7 +368,7 @@
 
     <div class="main-content">
         <div class="banner">
-            <div class="text">Дарим 100 монет за каждого реферала!</div>
+            <div class="text">Получите 15% на баланс от каждого проигрыша вашего РЕФЕРАЛА</div>
             <button class="btn btn-primary" onclick="showReferralModal()">Пригласить друга</button>
         </div>
 
@@ -392,8 +397,9 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('depositModal')">&times;</span>
             <h3>Пополнение баланса</h3>
-            <input type="number" id="depositAmount" placeholder="Сумма" min="10">
-            <button class="btn btn-success" onclick="deposit()">Подтвердить</button>
+            <p>Пополнение доступно только в нашем Telegram-боте:</p>
+            <div class="referral-link" id="depositLink">https://t.me/casinoapp_testBot</div>
+            <button class="copy-btn" onclick="copyToClipboard('depositLink')">Скопировать ссылку</button>
         </div>
     </div>
 
@@ -401,15 +407,26 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('withdrawModal')">&times;</span>
             <h3>Вывод средств</h3>
-            <input type="number" id="withdrawAmount" placeholder="Сумма" min="10">
-            <button class="btn btn-info" onclick="withdraw()">Подтвердить</button>
+            <p>Вывод доступен только в нашем Telegram-боте:</p>
+            <div class="referral-link" id="withdrawLink">https://t.me/casinoapp_testBot</div>
+            <button class="copy-btn" onclick="copyToClipboard('withdrawLink')">Скопировать ссылку</button>
+        </div>
+    </div>
+
+    <div id="referralModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('referralModal')">&times;</span>
+            <h3>Пригласить друга</h3>
+            <p>Ваша реферальная ссылка:</p>
+            <div class="referral-link" id="referralLink">https://t.me/casinoapp_testBot?start={{ user_id|default('0') }}</div>
+            <button class="copy-btn" onclick="copyToClipboard('referralLink')">Скопировать ссылку</button>
         </div>
     </div>
 
     <script>
         // Текущий пользователь
         const CURRENT_USER = {
-            id: {{ user_id|default(0) }},
+            id: '{{ user_id|default(0) }}',
             first_name: "{{ first_name|default('Игрок') }}",
             username: "{{ username|default('') }}"
         };
@@ -427,7 +444,6 @@
             viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
             document.head.appendChild(viewportMeta);
             
-            // Дополнительные настройки для мобильных
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                 document.documentElement.style.overflowX = 'hidden';
                 document.body.style.overflowX = 'hidden';
@@ -465,24 +481,18 @@
 
         // Навигация по играм
         function launchGame(game) {
-            // Проверяем доступные игры
             const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
             if (!availableGames.includes(game)) {
                 alert('Игра временно недоступна');
                 return;
             }
 
-            // Создаем параметры URL
             const params = new URLSearchParams();
             params.append('user_id', CURRENT_USER.id);
             params.append('first_name', CURRENT_USER.first_name);
             if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
 
-            // Перенаправляем на игру с параметрами
             window.location.href = `/${game}?${params.toString()}`;
-            
-            // Для отладки
-            console.log(`Переход на игру: ${game}`, `Параметры: ${params.toString()}`);
         }
 
         // Показать модальное окно пополнения
@@ -497,7 +507,7 @@
 
         // Показать модальное окно рефералов
         function showReferralModal() {
-            alert('Реферальная система скоро будет доступна!');
+            document.getElementById('referralModal').style.display = 'block';
         }
 
         // Закрыть модальное окно
@@ -505,29 +515,17 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Пополнение баланса
-        function deposit() {
-            const amount = parseFloat(document.getElementById('depositAmount').value);
-            if (isNaN(amount)) {
-                alert('Введите корректную сумму');
-                return;
-            }
-
-            alert(`Пополнение на ${amount} монет успешно!`);
-            closeModal('depositModal');
-            document.getElementById('balance').textContent = (parseFloat(document.getElementById('balance').textContent) + amount).toFixed(2);
-        }
-
-        // Вывод средств
-        function withdraw() {
-            const amount = parseFloat(document.getElementById('withdrawAmount').value);
-            if (isNaN(amount)) {
-                alert('Введите корректную сумму');
-                return;
-            }
+        // Копировани  е в буфер обмена
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const range = document.createRange();
+            range.selectNode(element);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
             
-            alert(`Запрос на вывод ${amount} монет отправлен!`);
-            closeModal('withdrawModal');
+            alert('Ссылка скопирована в буфер обмена!');
         }
     </script>
 </body>
