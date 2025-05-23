@@ -341,11 +341,14 @@ class User:
             if loss_amount <= 0:
                 return False
                 
+            cursor = connection.cursor()
+            
             # Получаем ID реферера
-            referrer_id = connection.cursor().execute(
+            cursor.execute(
                 "SELECT referrer FROM users WHERE user_id = %s", 
                 (user_id,)
-            ).fetchone()
+            )
+            referrer_id = cursor.fetchone()
             
             if not referrer_id or not referrer_id[0]:
                 return False
@@ -356,7 +359,7 @@ class User:
             bonus_amount = loss_amount * 0.15
             
             # Начисляем бонус на реферальный баланс
-            connection.cursor().execute(
+            cursor.execute(
                 "UPDATE users SET referral_balance = referral_balance + %s WHERE user_id = %s",
                 (bonus_amount, referrer_id)
             )
