@@ -328,6 +328,50 @@ class User:
         finally:
             if connection:
                 connection.close()
+
+    # В классе User добавляем новый метод
+    def add_bonus_ref(self, user_id: int, loss_amount: float):
+        """Начисляет 15% от суммы проигрыша на реферальный баланс реферера"""
+        connection = create_db_connection()
+        if not connection:
+            return False
+        
+        try:
+            # Проверяем что сумма проигрыша положительная
+            if loss_amount <= 0:
+                return False
+                
+            # Получаем ID реферера
+            referrer_id = connection.cursor().execute(
+                "SELECT referrer FROM users WHERE user_id = %s", 
+                (user_id,)
+            ).fetchone()
+            
+            if not referrer_id or not referrer_id[0]:
+                return False
+                
+            referrer_id = referrer_id[0]
+            
+            # Рассчитываем бонус (15% от проигрыша)
+            bonus_amount = loss_amount * 0.15
+            
+            # Начисляем бонус на реферальный баланс
+            connection.cursor().execute(
+                "UPDATE users SET referral_balance = referral_balance + %s WHERE user_id = %s",
+                (bonus_amount, referrer_id)
+            )
+            connection.commit()
+            
+            logger.info(f"Начислен реферальный бонус {bonus_amount:.2f} пользователю {referrer_id} за проигрыш {user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Ошибка в add_bonus_ref: {e}")
+            connection.rollback()
+            return False
+        finally:
+            if connection:
+                connection.close()
     #=====================================================================
                     # РАБОТА С АВИАТОР ПОДКРУТКА 
     #=====================================================================
@@ -412,6 +456,8 @@ class User:
         except Exception as e:
             logger.error(f"Error calculating aviator RTP: {e}")
             return {'total_bets': 0, 'total_wins': 0, 'rtp': 0, 'casino_profit': 0}
+
+    
     #=====================================================================
 
 
@@ -568,10 +614,10 @@ def aviator():
     user = User(temp_user_data)
 
     return render_template('aviator.html',
-                         user_id=user.user_id,
-                         username=user.username,
-                         first_name=user.first_name,
-                         photo_url=user.photo_url)
+                        user_id=user.user_id,
+                        username=user.username,
+                        first_name=user.first_name,
+                        photo_url=user.photo_url)
 
 # API для работы с пользователем
 @app.route('/api/user', methods=['POST'])
@@ -648,7 +694,7 @@ def aviator_bet():
         if user.game_state != 'idle':
             return jsonify({'status': 'error', 'message': f'Game in progress. Current state: {user.game_state}'}), 400
 
-        if bet_amount < 10:
+        if bet_amount < 0.1:
             return jsonify({'status': 'error', 'message': 'Minimum bet is 10₽'}), 400
 
         if user.balance < bet_amount:
@@ -704,6 +750,7 @@ def aviator_bet():
     finally:
         if connection:
             connection.close()
+
 
 @app.route('/api/aviator/cashout', methods=['POST'])
 def aviator_cashout():
@@ -791,6 +838,8 @@ def aviator_crash():
             # Обновляем статистику
             user.increment_losses(user_id)
             user.update_total_lose_amount(user_id, original_bet)
+            # После user.increment_losses(user_id)
+            user.add_bonus_ref(user_id, original_bet)
 
             user.save_game_state(connection)
 
