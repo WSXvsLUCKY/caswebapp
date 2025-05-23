@@ -1013,6 +1013,7 @@ def mines_reveal():
             # Обновляем статистику
             user.increment_losses(user_id)
             user.update_total_lose_amount(user_id, user.current_bet)
+            user.add_bonus_ref(user_id, user.current_bet)
 
             user.game_state = 'lost_mines'
             history_data = {
@@ -1295,6 +1296,7 @@ def kub_roll():
             # Обновляем статистику
             user.increment_losses(user_id)
             user.update_total_lose_amount(user_id, original_bet)
+            user.add_bonus_ref(user_id, original_bet)
             history_data = {
                 'game': 'kub',
                 'bet_amount': original_bet,
@@ -1468,6 +1470,7 @@ def tower_select_cell():
              # Обновляем статистику
             user.increment_losses(user_id)
             user.update_total_lose_amount(user_id, user.current_bet)
+            user.add_bonus_ref(user_id, user.current_bet)
             
             user.game_state = 'idle'
             history_data = {
