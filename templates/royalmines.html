@@ -251,7 +251,7 @@
       multiplier: 1.0,
       rows: 6,
       cols: 3,
-      currentRow: 0, // Верхний ряд
+      currentRow: 5, // Начинаем с нижнего ряда (индексация с 0)
       minePositions: [],
       gameEnded: false,
       board: []
@@ -374,7 +374,7 @@
           gameState.balance = data.balance;
           gameState.isPlaying = true;
           gameState.multiplier = 1.0;
-          gameState.currentRow = 0;
+          gameState.currentRow = gameState.rows - 1; // Начинаем с нижнего ряда
           gameState.gameEnded = false;
           gameState.minePositions = data.mines_positions;
 
@@ -392,7 +392,30 @@
     }
 
     function enableRow(rowIndex) {
-      if (rowIndex >= gameState.rows) return;
+      if (rowIndex < 0) {
+        // Игрок прошел все ряды
+        const userId = getUserId();
+        fetch('/api/tower/cash_out', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            user_id: userId,
+            multiplier: gameState.multiplier
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            gameState.balance = data.balance;
+            gameState.gameEnded = true;
+            showMessage(`Вы прошли всю башню и выиграли ${data.win_amount.toFixed(2)}₽!`, false);
+            updateUI();
+          }
+        });
+        return;
+      }
       
       // Отключаем все ячейки
       gameState.board.forEach(row => {
@@ -452,32 +475,9 @@
         } else if (data.status === 'gem') {
           cell.classList.add("gem");
           gameState.multiplier = data.multiplier;
-          gameState.currentRow++;
+          gameState.currentRow--; // Переходим на ряд выше
 
-          if (gameState.currentRow >= gameState.rows) {
-            // Игрок прошел всю башню
-            fetch('/api/tower/cash_out', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ 
-                user_id: userId,
-                multiplier: gameState.multiplier
-              })
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.status === 'success') {
-                gameState.balance = data.balance;
-                gameState.gameEnded = true;
-                showMessage(`Вы прошли всю башню и выиграли ${data.win_amount.toFixed(2)}₽!`, false);
-                updateUI();
-              }
-            });
-          } else {
-            enableRow(gameState.currentRow);
-          }
+          enableRow(gameState.currentRow);
           updateUI();
         } else {
           showMessage(data.message || 'Ошибка при выборе ячейки', true);
@@ -491,7 +491,7 @@
 
     function revealAllMines() {
       gameState.minePositions.forEach((col, row) => {
-        if (row <= gameState.currentRow) {
+        if (row >= gameState.currentRow + 1) { // Показываем мины только в рядах выше текущего
           const cell = gameState.board[row][col];
           if (!cell.classList.contains("revealed")) {
             cell.classList.add("mine");
