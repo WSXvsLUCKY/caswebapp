@@ -1,532 +1,336 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scrooge Bet</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Roboto:wght@400;500&display=swap');
-        
-        :root {
-            --gradient-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            --neon-blue: #00f5ff;
-            --neon-purple: #9d00ff;
-            --text-glow: 0 0 10px rgba(157, 0, 255, 0.7);
-            --sidebar-bg: rgba(27, 31, 53, 0.8);
-            --header-bg: rgba(27, 31, 53, 0.9);
-            --card-bg: rgba(35, 40, 70, 0.6);
-            --card-hover: rgba(45, 51, 84, 0.8);
-        }
-        
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Roboto', sans-serif;
-            background: var(--gradient-bg);
-            color: white;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .header {
-            padding: 10px 12px;
-            background: var(--header-bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            position: relative;
-            width: 100%;
-        }
-        
-        .header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
-            opacity: 0.5;
-        }
-        
-        .logo {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 900;
-            font-size: 16px;
-            background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: var(--text-glow);
-            letter-spacing: 1px;
-        }
-        
-        .balance-container {
-            display: flex;
-            align-items: center;
-            margin-left: auto;
-        }
-        
-        .balance {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .balance-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-left: 6px;
-        }
-        
-        .balance-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            margin-right: 4px;
-        }
-        
-        .balance-amount {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            color: #00ff88;
-            font-size: 12px;
-            text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
-        }
-        
-        .balance-amount img {
-            width: 12px;
-            height: 12px;
-            margin-right: 3px;
-        }
-        
-        .username {
-            font-size: 9px;
-            opacity: 0.8;
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 70px;
-        }
-        
-        .btn {
-            padding: 5px 8px;
-            border: none;
-            border-radius: 6px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 10px;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-            white-space: nowrap;
-        }
-        
-        .btn-success {
-            background: linear-gradient(90deg, #00c853, #5efc82);
-            color: #000;
-        }
-        
-        .btn-info {
-            background: linear-gradient(90deg, #0091ea, #64b5f6);
-            color: #000;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(90deg, #9d00ff, #d500f9);
-            color: white;
-        }
-        
-        .main-content {
-            padding: 8px;
-            width: 100%;
-        }
-        
-        .banner {
-            margin: 12px;
-            background: linear-gradient(90deg, #9d00ff 0%, #00f5ff 100%);
-            border-radius: 10px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(157, 0, 255, 0.4);
-            animation: pulse 3s infinite;
-        }
-        
-        .banner .text {
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 12px;
-        }
-        
-        .game-card {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.3s, background 0.3s;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .game-card:hover {
-            background: var(--card-hover);
-            transform: translateY(-3px);
-        }
-        
-        .game-card img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            margin-bottom: 8px;
-        }
-        
-        .game-card div {
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal-content {
-            background: var(--header-bg);
-            margin: 15% auto;
-            padding: 15px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 300px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
-        
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .close:hover {
-            color: white;
-        }
-        
-        .modal-content h3 {
-            margin-top: 0;
-            font-size: 16px;
-            text-align: center;
-        }
-        
-        .modal-content input {
-            width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .modal-content button {
-            width: 100%;
-            padding: 8px;
-        }
-        
-        .referral-link {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 6px;
-            margin: 10px 0;
-            word-break: break-all;
-            font-size: 12px;
-            text-align: center;
-            cursor: pointer;
-        }
-        
-        .copy-btn {
-            background: linear-gradient(90deg, #00f5ff, #9d00ff);
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            width: 100%;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(157, 0, 255, 0.7); }
-            100% { box-shadow: 0 0 20px rgba(157, 0, 255, 0.4); }
-        }
-        
-        /* Адаптивные стили для планшетов и десктопов */
-        @media (min-width: 768px) {
-            .header {
-                padding: 12px 15px;
-            }
-            
-            .logo {
-                font-size: 18px;
-            }
-            
-            .balance-amount {
-                font-size: 13px;
-            }
-            
-            .username {
-                font-size: 10px;
-                max-width: 90px;
-            }
-            
-            .btn {
-                padding: 6px 10px;
-                font-size: 11px;
-            }
-            
-            .banner {
-                margin: 15px;
-                padding: 15px;
-            }
-            
-            .banner .text {
-                font-size: 14px;
-            }
-            
-            .games-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 15px;
-                margin: 15px;
-            }
-            
-            .game-card img {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .game-card div {
-                font-size: 13px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>SCROOGEBET - Казино игры</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(to bottom, #1c0128, #0a0012);
+      color: #fff;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .balance-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 600px;
+      margin: 0 auto 20px;
+      background: rgba(30, 10, 50, 0.8);
+      border-radius: 15px;
+      padding: 12px 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .casino-name {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(154, 92, 255, 0.7);
+    }
+
+    .balance-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    .balance-left {
+      background: rgba(20, 5, 40, 0.9);
+      padding: 8px 15px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .balance-right {
+      background: rgba(20, 5, 40, 0.9);
+      padding: 8px 15px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .balance-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .profile-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .balance-text {
+      font-weight: 600;
+    }
+
+    .balance-amount {
+      font-weight: 700;
+      color: #00ff88;
+      text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
+    }
+
+    .profile-text {
+      font-weight: 600;
+    }
+
+    .profile-id {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .profile-name {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80px;
+    }
+
+    .menu {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      position: relative;
+      height: 180px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .card-image {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .card-content {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 40%;
+      height: 100%;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: #fff;
+      line-height: 1.4;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      font-weight: 600;
+    }
+
+    .card-button {
+      background: rgba(123, 63, 228, 0.9);
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+      width: 100%;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .card-button:hover {
+      background: rgba(154, 92, 255, 0.9);
+    }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">SCROOGE BET</div>
-        <div class="balance-container">
-            <div class="balance">
-                <div class="balance-info">
-                    <div class="balance-amount">
-                        <img src="/static/images/wallet.png">
-                        <span id="balance">0.00</span>
-                    </div>
-                    <div class="username" id="username">{{ first_name|default('Игрок') }}</div>
-                </div>
-            </div>
-            <div class="balance-buttons">
-                <button class="btn btn-success" onclick="showDepositModal()">Пополнить</button>
-                <button class="btn btn-info" onclick="showWithdrawModal()">Вывести</button>
-            </div>
+  <div class="balance-container">
+    <div class="balance-section">
+      <div class="balance-left">
+        <div class="balance-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/12877/12877946.png?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid')"></div>
+        <div>
+          <span class="balance-text">Баланс:</span>
+          <span class="balance-amount" id="balance">0.00</span>
         </div>
+      </div>
+    </div>
+    
+    <div class="casino-name">SCROOGEBET</div>
+    
+    <div class="balance-section">
+      <div class="balance-right">
+        <div class="profile-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/14359/14359792.png?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid')"></div>
+        <div>
+          <span class="profile-text">ID:</span>
+          <span class="profile-id" id="user-id">0</span>
+          <div class="profile-name" id="username">{{ first_name|default('Игрок') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu">
+    <!-- CUBE -->
+    <div class="card" onclick="launchGame('cubes')">
+      <div class="card-image" style="background-image: url('https://img.freepik.com/premium-psd/two-white-plastic-dice-3d-objects_1307878-31.jpg')"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-title">CUBE</div>
+          <div class="card-description">Бросай кубик и выигрывай</div>
+        </div>
+        <button class="card-button">Играть</button>
+      </div>
     </div>
 
-    <div class="main-content">
-        <div class="banner">
-            <div class="text">Получите 15% на баланс от каждого проигрыша вашего РЕФЕРАЛА</div>
-            <button class="btn btn-primary" onclick="showReferralModal()">Пригласить друга</button>
+    <!-- TOWER -->
+    <div class="card" onclick="launchGame('tower')">
+      <div class="card-image" style="background-image: url('https://i.imgur.com/roulette-bg.jpg')"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-title">TOWER</div>
+          <div class="card-description">Открывай и зарабатывай</div>
         </div>
-
-        <div class="games-grid">
-            <div class="game-card" onclick="launchGame('aviator')">
-                <img src="/static/images/aviator.png" alt="Aviator">
-                <div>Aviator</div>
-            </div>
-            <div class="game-card" onclick="launchGame('mines')">
-                <img src="/static/images/mines.png" alt="Mines">
-                <div>Mines</div>
-            </div>
-            <div class="game-card" onclick="launchGame('cubes')">
-                <img src="/static/images/cubes.png" alt="Cubes">
-                <div>Cubes</div>
-            </div>
-            <div class="game-card" onclick="launchGame('tower')">
-                <img src="/static/images/tower.png" alt="Tower">
-                <div>Tower</div>
-            </div>
-        </div>
+        <button class="card-button">Играть</button>
+      </div>
     </div>
 
-    <!-- Модальные окна -->
-    <div id="depositModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('depositModal')">&times;</span>
-            <h3>Пополнение баланса</h3>
-            <p>Пополнение доступно только в нашем Telegram-боте:</p>
-            <div class="referral-link" id="depositLink">https://t.me/casinoapp_testBot</div>
-            <button class="copy-btn" onclick="copyToClipboard('depositLink')">Скопировать ссылку</button>
+    <!-- AVIATOR -->
+    <div class="card" onclick="launchGame('aviator')">
+      <div class="card-image" style="background-image: url('https://i.imgur.com/aviator-bg.jpg')"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-title">AVIATOR</div>
+          <div class="card-description">Лети и зарабатывай</div>
         </div>
+        <button class="card-button">Играть</button>
+      </div>
     </div>
 
-    <div id="withdrawModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('withdrawModal')">&times;</span>
-            <h3>Вывод средств</h3>
-            <p>Вывод доступен только в нашем Telegram-боте:</p>
-            <div class="referral-link" id="withdrawLink">https://t.me/casinoapp_testBot</div>
-            <button class="copy-btn" onclick="copyToClipboard('withdrawLink')">Скопировать ссылку</button>
+    <!-- MINES -->
+    <div class="card" onclick="launchGame('mines')">
+      <div class="card-image" style="background-image: url('https://img.freepik.com/free-vector/realistic-bomb-illustration_1284-11507.jpg?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid&w=740')"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-title">MINES</div>
+          <div class="card-description">Найди алмазы</div>
         </div>
+        <button class="card-button">Играть</button>
+      </div>
     </div>
+  </div>
 
-    <div id="referralModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('referralModal')">&times;</span>
-            <h3>Пригласить друга</h3>
-            <p>Ваша реферальная ссылка:</p>
-            <div class="referral-link" id="referralLink">https://t.me/casinoapp_testBot?start={{ user_id|default('0') }}</div>
-            <button class="copy-btn" onclick="copyToClipboard('referralLink')">Скопировать ссылку</button>
-        </div>
-    </div>
+  <script>
+    // Текущий пользователь
+    const CURRENT_USER = {
+      id: '{{ user_id|default(0) }}',
+      first_name: "{{ first_name|default('Игрок') }}",
+      username: "{{ username|default('') }}"
+    };
 
-    <script>
-        // Текущий пользователь
-        const CURRENT_USER = {
-            id: '{{ user_id|default(0) }}',
-            first_name: "{{ first_name|default('Игрок') }}",
-            username: "{{ username|default('') }}"
-        };
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadUserData();
+      setupViewport();
+      
+      // Устанавливаем ID пользователя
+      document.getElementById('user-id').textContent = CURRENT_USER.id;
+    });
 
-        // Инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadUserData();
-            setupViewport();
+    // Настройка viewport для мобильных устройств
+    function setupViewport() {
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        document.documentElement.style.overflowX = 'hidden';
+        document.body.style.overflowX = 'hidden';
+      }
+    }
+
+    // Загрузка данных пользователя
+    async function loadUserData() {
+      try {
+        const response = await fetch('/api/user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user: CURRENT_USER
+          })
         });
-
-        // Настройка viewport для мобильных устройств
-        function setupViewport() {
-            const viewportMeta = document.createElement('meta');
-            viewportMeta.name = 'viewport';
-            viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-            document.head.appendChild(viewportMeta);
-            
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                document.documentElement.style.overflowX = 'hidden';
-                document.body.style.overflowX = 'hidden';
-            }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          document.getElementById('balance').textContent = data.user.balance.toFixed(2);
+          
+          if (!CURRENT_USER.first_name || CURRENT_USER.first_name === 'Игрок') {
+            const displayName = data.user.first_name || 'Игрок';
+            document.getElementById('username').textContent = displayName;
+            CURRENT_USER.first_name = displayName;
+          }
         }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    }
 
-        // Загрузка данных пользователя
-        async function loadUserData() {
-            try {
-                const response = await fetch('/api/user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user: CURRENT_USER
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    document.getElementById('balance').textContent = data.user.balance.toFixed(2);
-                    
-                    if (!CURRENT_USER.first_name || CURRENT_USER.first_name === 'Игрок') {
-                        const displayName = data.user.first_name || 'Игрок';
-                        document.getElementById('username').textContent = displayName;
-                        CURRENT_USER.first_name = displayName;
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            }
-        }
+    // Навигация по играм
+    function launchGame(game) {
+      const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
+      if (!availableGames.includes(game)) {
+        alert('Игра временно недоступна');
+        return;
+      }
 
-        // Навигация по играм
-        function launchGame(game) {
-            const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
-            if (!availableGames.includes(game)) {
-                alert('Игра временно недоступна');
-                return;
-            }
+      const params = new URLSearchParams();
+      params.append('user_id', CURRENT_USER.id);
+      params.append('first_name', CURRENT_USER.first_name);
+      if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
 
-            const params = new URLSearchParams();
-            params.append('user_id', CURRENT_USER.id);
-            params.append('first_name', CURRENT_USER.first_name);
-            if (CURRENT_USER.username) params.append('username', CURRENT_USER.username);
-
-            window.location.href = `/${game}?${params.toString()}`;
-        }
-
-        // Показать модальное окно пополнения
-        function showDepositModal() {
-            document.getElementById('depositModal').style.display = 'block';
-        }
-
-        // Показать модальное окно вывода
-        function showWithdrawModal() {
-            document.getElementById('withdrawModal').style.display = 'block';
-        }
-
-        // Показать модальное окно рефералов
-        function showReferralModal() {
-            document.getElementById('referralModal').style.display = 'block';
-        }
-
-        // Закрыть модальное окно
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Копировани  е в буфер обмена
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const range = document.createRange();
-            range.selectNode(element);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-            
-            alert('Ссылка скопирована в буфер обмена!');
-        }
-    </script>
+      window.location.href = `/${game}?${params.toString()}`;
+    }
+  </script>
 </body>
 </html>
