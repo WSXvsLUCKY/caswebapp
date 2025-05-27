@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>SCROOGEBET - Казино игры</title>
+  <title>SCROOGEBET</title>
   <style>
     * {
       box-sizing: border-box;
@@ -15,7 +15,7 @@
     body {
       background: linear-gradient(to bottom, #1c0128, #0a0012);
       color: #fff;
-      padding: 20px;
+      padding: 15px;
       min-height: 100vh;
     }
 
@@ -23,11 +23,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      max-width: 600px;
-      margin: 0 auto 20px;
+      width: 100%;
+      margin: 0 auto 15px;
       background: rgba(30, 10, 50, 0.8);
-      border-radius: 15px;
-      padding: 12px 15px;
+      border-radius: 12px;
+      padding: 10px 12px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       position: relative;
     }
@@ -36,99 +36,80 @@
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      font-weight: 800;
-      font-size: 18px;
+      font-weight: 700;
+      font-size: 16px;
       color: #fff;
-      text-shadow: 0 0 10px rgba(154, 92, 255, 0.7);
-      font-style: italic;
-      font-family: 'Arial', sans-serif;
-      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px rgba(154, 92, 255, 0.7);
+      white-space: nowrap;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .balance-section {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       z-index: 1;
     }
 
-    .balance-left {
+    .balance-box {
       background: rgba(20, 5, 40, 0.9);
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      min-width: 0;
     }
 
-    .balance-right {
-      background: rgba(20, 5, 40, 0.9);
-      padding: 6px 10px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .balance-icon {
-      width: 18px;
-      height: 18px;
+    .balance-icon, .profile-icon {
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background-size: cover;
       background-position: center;
+      flex-shrink: 0;
     }
 
-    .profile-icon {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background-size: cover;
-      background-position: center;
+    .balance-text, .profile-text {
+      font-weight: 500;
+      font-size: 11px;
+      opacity: 0.8;
+      white-space: nowrap;
     }
 
-    .balance-text {
+    .balance-amount, .profile-id {
       font-weight: 600;
       font-size: 12px;
-      opacity: 0.8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .balance-amount {
-      font-weight: 600;
       color: #00ff88;
-      text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
-      font-size: 14px;
-    }
-
-    .profile-text {
-      font-weight: 600;
-      font-size: 12px;
-      opacity: 0.8;
-    }
-
-    .profile-id {
-      font-weight: 600;
-      color: #fff;
-      font-size: 14px;
+      text-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
     }
 
     .menu {
-      max-width: 600px;
+      width: 100%;
       margin: 0 auto;
     }
 
     .card {
       position: relative;
-      height: 180px;
-      border-radius: 15px;
-      margin-bottom: 20px;
+      height: 160px;
+      border-radius: 12px;
+      margin-bottom: 15px;
       overflow: hidden;
-      box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+      box-shadow: 0 0 12px rgba(255, 0, 255, 0.2);
       cursor: pointer;
-      transition: transform 0.3s;
+      transition: transform 0.2s;
     }
 
     .card:hover {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
     }
 
     .card-image {
@@ -144,40 +125,40 @@
       right: 0;
       width: 40%;
       height: 100%;
-      padding: 15px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
 
     .card-title {
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 5px;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
     .card-description {
-      font-size: 14px;
+      font-size: 12px;
       color: #fff;
-      line-height: 1.4;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      line-height: 1.3;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       font-weight: 600;
     }
 
     .card-button {
       background: rgba(123, 63, 228, 0.9);
       border: none;
-      padding: 10px;
-      border-radius: 10px;
+      padding: 8px;
+      border-radius: 8px;
       color: #fff;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
-      transition: 0.3s;
+      transition: 0.2s;
       width: 100%;
-      font-weight: 800;
+      font-weight: 700;
       text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
     .card-button:hover {
@@ -188,8 +169,8 @@
 <body>
   <div class="balance-container">
     <div class="balance-section">
-      <div class="balance-left">
-        <div class="balance-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/12877/12877946.png?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid')"></div>
+      <div class="balance-box">
+        <div class="balance-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/12877/12877946.png')"></div>
         <div>
           <span class="balance-text">SRG:</span>
           <span class="balance-amount" id="balance">0.00</span>
@@ -200,8 +181,8 @@
     <div class="casino-name">sᴄʀᴏᴏɢᴇʙᴇᴛ</div>
     
     <div class="balance-section">
-      <div class="balance-right">
-        <div class="profile-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/14359/14359792.png?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid')"></div>
+      <div class="balance-box">
+        <div class="profile-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/14359/14359792.png')"></div>
         <div>
           <span class="profile-text">ID:</span>
           <span class="profile-id" id="user-id">0</span>
@@ -217,7 +198,7 @@
       <div class="card-content">
         <div>
           <div class="card-title">CUBE</div>
-          <div class="card-description">ПРОСВИДОРЖАЯ ВЫМПРЫВЕЙ</div>
+          <div class="card-description">ЦИФЕВИЛОРУДОВЫМ ПРЯМОЙ</div>
         </div>
         <button class="card-button">Играть</button>
       </div>
@@ -246,18 +227,6 @@
         <button class="card-button">Играть</button>
       </div>
     </div>
-
-    <!-- MINES -->
-    <div class="card" onclick="launchGame('mines')">
-      <div class="card-image" style="background-image: url('https://img.freepik.com/free-vector/realistic-bomb-illustration_1284-11507.jpg?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid&w=740')"></div>
-      <div class="card-content">
-        <div>
-          <div class="card-title">MINES</div>
-          <div class="card-description">Найди алмазы</div>
-        </div>
-        <button class="card-button">Играть</button>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -272,12 +241,9 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await loadUserData();
       setupViewport();
-      
-      // Устанавливаем ID пользователя
       document.getElementById('user-id').textContent = CURRENT_USER.id;
     });
 
-    // Настройка viewport для мобильных устройств
     function setupViewport() {
       if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         document.documentElement.style.overflowX = 'hidden';
@@ -285,7 +251,6 @@
       }
     }
 
-    // Загрузка данных пользователя
     async function loadUserData() {
       try {
         const response = await fetch('/api/user', {
@@ -299,7 +264,6 @@
         });
         
         const data = await response.json();
-        
         if (data.status === 'success') {
           document.getElementById('balance').textContent = data.user.balance.toFixed(2);
         }
@@ -308,7 +272,6 @@
       }
     }
 
-    // Навигация по играм
     function launchGame(game) {
       const availableGames = ['aviator', 'mines', 'cubes', 'tower'];
       if (!availableGames.includes(game)) {
