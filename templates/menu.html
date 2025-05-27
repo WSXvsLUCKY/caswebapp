@@ -27,7 +27,7 @@
       margin: 0 auto 20px;
       background: rgba(30, 10, 50, 0.8);
       border-radius: 15px;
-      padding: 12px 15px;
+      padding: 8px 12px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       position: relative;
     }
@@ -40,44 +40,47 @@
       font-size: 18px;
       color: #fff;
       text-shadow: 0 0 10px rgba(154, 92, 255, 0.7);
+      font-style: italic;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: 0.5px;
     }
 
     .balance-section {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       z-index: 1;
     }
 
     .balance-left {
       background: rgba(20, 5, 40, 0.9);
-      padding: 8px 15px;
-      border-radius: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .balance-right {
       background: rgba(20, 5, 40, 0.9);
-      padding: 8px 15px;
-      border-radius: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .balance-icon {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background-size: cover;
       background-position: center;
     }
 
     .profile-icon {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background-size: cover;
       background-position: center;
@@ -85,31 +88,27 @@
 
     .balance-text {
       font-weight: 600;
+      font-size: 12px;
+      opacity: 0.8;
     }
 
     .balance-amount {
       font-weight: 700;
       color: #00ff88;
       text-shadow: 0 0 6px rgba(0, 255, 136, 0.5);
+      font-size: 14px;
     }
 
     .profile-text {
       font-weight: 600;
+      font-size: 12px;
+      opacity: 0.8;
     }
 
     .profile-id {
       font-weight: 700;
       color: #fff;
-    }
-
-    .profile-name {
-      font-size: 12px;
-      opacity: 0.8;
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 80px;
+      font-size: 14px;
     }
 
     .menu {
@@ -192,13 +191,13 @@
       <div class="balance-left">
         <div class="balance-icon" style="background-image: url('https://cdn-icons-png.freepik.com/256/12877/12877946.png?uid=R198776145&ga=GA1.1.1157537234.1728716673&semt=ais_hybrid')"></div>
         <div>
-          <span class="balance-text">Баланс:</span>
+          <span class="balance-text">SRG:</span>
           <span class="balance-amount" id="balance">0.00</span>
         </div>
       </div>
     </div>
     
-    <div class="casino-name">SCROOGEBET</div>
+    <div class="casino-name">sᴄʀᴏᴏɢᴇʙᴇᴛ</div>
     
     <div class="balance-section">
       <div class="balance-right">
@@ -206,7 +205,6 @@
         <div>
           <span class="profile-text">ID:</span>
           <span class="profile-id" id="user-id">0</span>
-          <div class="profile-name" id="username">{{ first_name|default('Игрок') }}</div>
         </div>
       </div>
     </div>
@@ -219,7 +217,7 @@
       <div class="card-content">
         <div>
           <div class="card-title">CUBE</div>
-          <div class="card-description">Бросай кубик и выигрывай</div>
+          <div class="card-description">Просай корж и выигрывай</div>
         </div>
         <button class="card-button">Играть</button>
       </div>
@@ -304,12 +302,6 @@
         
         if (data.status === 'success') {
           document.getElementById('balance').textContent = data.user.balance.toFixed(2);
-          
-          if (!CURRENT_USER.first_name || CURRENT_USER.first_name === 'Игрок') {
-            const displayName = data.user.first_name || 'Игрок';
-            document.getElementById('username').textContent = displayName;
-            CURRENT_USER.first_name = displayName;
-          }
         }
       } catch (error) {
         console.error('Error loading user data:', error);
